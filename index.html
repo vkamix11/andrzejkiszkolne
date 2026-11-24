@@ -4,14 +4,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lista piosenek</title>
+<title>Andrzejki szkolne</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
     margin: 0;
@@ -21,15 +19,9 @@ body {
     font-family: Arial, sans-serif;
 }
 
-.container {
-    max-width: 760px;
-    margin: auto;
-}
+.container { max-width: 760px; margin: auto; }
 
-h1 {
-    text-align: center;
-    margin-bottom: 8px;
-}
+h1 { text-align: center; margin-bottom: 8px; }
 
 .subtitle {
     text-align: center;
@@ -45,10 +37,7 @@ h1 {
     margin-bottom: 20px;
 }
 
-h2 {
-    font-size: 19px;
-    margin-top: 0;
-}
+h2 { font-size: 19px; margin-top: 0; }
 
 input {
     width: 100%;
@@ -70,6 +59,11 @@ button {
     font-size: 14px;
 }
 
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .primary {
     background: #3978ed;
     color: white;
@@ -77,20 +71,9 @@ button {
     margin-top: 8px;
 }
 
-.approve {
-    background: #176b43;
-    color: white;
-}
-
-.reject {
-    background: #873333;
-    color: white;
-}
-
-.delete {
-    background: #343741;
-    color: white;
-}
+.approve { background: #176b43; color: white; }
+.reject { background: #873333; color: white; }
+.delete { background: #343741; color: white; }
 
 .song {
     display: flex;
@@ -101,13 +84,9 @@ button {
     border-bottom: 1px solid #30323a;
 }
 
-.song:last-child {
-    border-bottom: 0;
-}
+.song:last-child { border-bottom: 0; }
 
-.song-title {
-    font-weight: bold;
-}
+.song-title { font-weight: bold; }
 
 .artist {
     color: #999;
@@ -123,20 +102,9 @@ button {
     margin-top: 7px;
 }
 
-.approved {
-    background: #174b35;
-    color: #76e4aa;
-}
-
-.pending {
-    background: #59451a;
-    color: #ffd77a;
-}
-
-.rejected {
-    background: #542727;
-    color: #ffaaaa;
-}
+.approved { background: #174b35; color: #76e4aa; }
+.pending { background: #59451a; color: #ffd77a; }
+.rejected { background: #542727; color: #ffaaaa; }
 
 .actions {
     display: flex;
@@ -145,9 +113,7 @@ button {
     margin-top: 9px;
 }
 
-.actions button {
-    padding: 8px 10px;
-}
+.actions button { padding: 8px 10px; }
 
 .message {
     color: #aaa;
@@ -155,9 +121,7 @@ button {
     margin-top: 10px;
 }
 
-.hidden {
-    display: none;
-}
+.hidden { display: none; }
 
 .top-info {
     color: #999;
@@ -178,7 +142,7 @@ button {
 <body>
 <div class="container">
 
-    <h1>🎵 Lista piosenek</h1>
+    <h1>🎵 Andrzejki szkolne</h1>
     <div class="subtitle">Zaproponuj utwór i poczekaj na weryfikację</div>
 
     <div class="card">
@@ -187,7 +151,7 @@ button {
         <form id="songForm">
             <input id="title" placeholder="Tytuł piosenki" required maxlength="150">
             <input id="artist" placeholder="Wykonawca (opcjonalnie)" maxlength="150">
-            <button class="primary" type="submit">Wyślij propozycję</button>
+            <button class="primary" id="submitButton" type="submit">Wyślij propozycję</button>
         </form>
 
         <div id="formMessage" class="message"></div>
@@ -220,7 +184,6 @@ button {
 
 <script>
 const SUPABASE_URL = "https://oxyqhdvotdcviorvhmxi.supabase.co";
-
 const SUPABASE_KEY = "sb_publishable_xrpYjsZi08JZ-EivDnvspg_xGRf0XXt";
 
 const db = window.supabase.createClient(
@@ -229,6 +192,7 @@ const db = window.supabase.createClient(
 );
 
 let isAdmin = false;
+let loadVersion = 0;
 
 const songList = document.getElementById("songList");
 const songCount = document.getElementById("songCount");
@@ -240,17 +204,24 @@ const statusNames = {
 };
 
 async function loadSongs() {
-    songList.replaceChildren();
+    const currentVersion = ++loadVersion;
 
     const { data, error } = await db
         .from("songs")
         .select("*")
         .order("created_at", { ascending: true });
 
+    // Pomijamy starsze zapytania, jeśli nowsze już się zakończyło.
+    if (currentVersion !== loadVersion) return;
+
     if (error) {
+        songList.replaceChildren();
         songList.textContent = "Nie udało się pobrać piosenek: " + error.message;
         return;
     }
+
+    // Czyścimy listę dopiero po pobraniu danych.
+    songList.replaceChildren();
 
     songCount.textContent = "Liczba utworów: " + data.length;
 
@@ -324,7 +295,7 @@ async function updateStatus(id, status) {
         return;
     }
 
-    loadSongs();
+    await loadSongs();
 }
 
 async function deleteSong(id) {
@@ -340,11 +311,16 @@ async function deleteSong(id) {
         return;
     }
 
-    loadSongs();
+    await loadSongs();
 }
 
 document.getElementById("songForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+
+    const form = e.currentTarget;
+    const submitButton = document.getElementById("submitButton");
+
+    if (submitButton.disabled) return;
 
     const title = document.getElementById("title").value.trim();
     const artist = document.getElementById("artist").value.trim();
@@ -352,33 +328,38 @@ document.getElementById("songForm").addEventListener("submit", async (e) => {
 
     if (!title) return;
 
+    submitButton.disabled = true;
     message.textContent = "Wysyłanie...";
 
-    const { error } = await db
-        .from("songs")
-        .insert({
-            title,
-            artist,
-            status: "pending"
-        });
+    try {
+        const { error } = await db
+            .from("songs")
+            .insert({
+                title,
+                artist,
+                status: "pending"
+            });
 
-    if (error) {
-        message.textContent = "Nie udało się wysłać: " + error.message;
-        return;
+        if (error) {
+            message.textContent = "Nie udało się wysłać: " + error.message;
+            return;
+        }
+
+        message.textContent = "Piosenka została wysłana do weryfikacji!";
+        form.reset();
+        await loadSongs();
+
+    } finally {
+        submitButton.disabled = false;
     }
-
-    message.textContent = "Piosenka została wysłana do weryfikacji!";
-
-    e.target.reset();
-    loadSongs();
 });
 
 async function checkAdmin() {
-    const { data: { user } } = await db.auth.getUser();
+    const { data: { user }, error: userError } = await db.auth.getUser();
 
     isAdmin = false;
 
-    if (user) {
+    if (user && !userError) {
         const { data, error } = await db
             .from("admins")
             .select("user_id")
@@ -396,7 +377,7 @@ async function checkAdmin() {
             "Zalogowano jako: " + user.email;
     }
 
-    loadSongs();
+    await loadSongs();
 }
 
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
