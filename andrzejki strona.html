@@ -1,0 +1,438 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista piosenek</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 25px 15px;
+    background: #101114;
+    color: #f5f5f5;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    max-width: 760px;
+    margin: auto;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #999;
+    margin-bottom: 30px;
+}
+
+.card {
+    background: #191b20;
+    border: 1px solid #292c33;
+    border-radius: 13px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+h2 {
+    font-size: 19px;
+    margin-top: 0;
+}
+
+input {
+    width: 100%;
+    padding: 13px;
+    margin: 7px 0;
+    background: #101114;
+    border: 1px solid #343741;
+    border-radius: 8px;
+    color: white;
+    font-size: 15px;
+}
+
+button {
+    border: 0;
+    border-radius: 8px;
+    padding: 11px 16px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.primary {
+    background: #3978ed;
+    color: white;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.approve {
+    background: #176b43;
+    color: white;
+}
+
+.reject {
+    background: #873333;
+    color: white;
+}
+
+.delete {
+    background: #343741;
+    color: white;
+}
+
+.song {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid #30323a;
+}
+
+.song:last-child {
+    border-bottom: 0;
+}
+
+.song-title {
+    font-weight: bold;
+}
+
+.artist {
+    color: #999;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.status {
+    display: inline-block;
+    font-size: 11px;
+    padding: 5px 8px;
+    border-radius: 20px;
+    margin-top: 7px;
+}
+
+.approved {
+    background: #174b35;
+    color: #76e4aa;
+}
+
+.pending {
+    background: #59451a;
+    color: #ffd77a;
+}
+
+.rejected {
+    background: #542727;
+    color: #ffaaaa;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 9px;
+}
+
+.actions button {
+    padding: 8px 10px;
+}
+
+.message {
+    color: #aaa;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.hidden {
+    display: none;
+}
+
+.top-info {
+    color: #999;
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 500px) {
+    .song {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>🎵 Lista piosenek</h1>
+    <div class="subtitle">Zaproponuj utwór i poczekaj na weryfikację</div>
+
+    <div class="card">
+        <h2>Dodaj piosenkę</h2>
+
+        <form id="songForm">
+            <input id="title" placeholder="Tytuł piosenki" required maxlength="150">
+            <input id="artist" placeholder="Wykonawca (opcjonalnie)" maxlength="150">
+            <button class="primary" type="submit">Wyślij propozycję</button>
+        </form>
+
+        <div id="formMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+        <h2>Lista utworów</h2>
+        <div class="top-info" id="songCount">Ładowanie...</div>
+        <div id="songList"></div>
+    </div>
+
+    <div class="card" id="loginCard">
+        <h2>Panel administratora</h2>
+        <form id="loginForm">
+            <input id="email" type="email" placeholder="Adres e-mail" required>
+            <input id="password" type="password" placeholder="Hasło" required>
+            <button class="primary" type="submit">Zaloguj się</button>
+        </form>
+        <div id="loginMessage" class="message"></div>
+    </div>
+
+    <div class="card hidden" id="adminCard">
+        <h2>Panel administratora</h2>
+        <p id="adminInfo" class="message">Zalogowano.</p>
+        <button id="logoutButton" class="delete">Wyloguj się</button>
+        <p class="message">Możesz teraz akceptować, odrzucać i usuwać piosenki.</p>
+    </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = "https://oxyqhdvotdcviorvhmxi.supabase.co";
+
+const SUPABASE_KEY = "sb_publishable_xrpYjsZi08JZ-EivDnvspg_xGRf0XXt";
+
+const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+let isAdmin = false;
+
+const songList = document.getElementById("songList");
+const songCount = document.getElementById("songCount");
+
+const statusNames = {
+    approved: "Zaakceptowano",
+    pending: "Czeka na weryfikację",
+    rejected: "Odrzucono"
+};
+
+async function loadSongs() {
+    songList.replaceChildren();
+
+    const { data, error } = await db
+        .from("songs")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+    if (error) {
+        songList.textContent = "Nie udało się pobrać piosenek: " + error.message;
+        return;
+    }
+
+    songCount.textContent = "Liczba utworów: " + data.length;
+
+    if (!data.length) {
+        songList.textContent = "Nie ma jeszcze żadnych piosenek.";
+        return;
+    }
+
+    for (const song of data) {
+        const item = document.createElement("div");
+        item.className = "song";
+
+        const info = document.createElement("div");
+
+        const title = document.createElement("div");
+        title.className = "song-title";
+        title.textContent = song.title;
+
+        const artist = document.createElement("div");
+        artist.className = "artist";
+        artist.textContent = song.artist || "Nie podano wykonawcy";
+
+        const status = document.createElement("span");
+        status.className = "status " + song.status;
+        status.textContent = statusNames[song.status] || song.status;
+
+        info.append(title, artist, status);
+        item.append(info);
+
+        if (isAdmin) {
+            const actions = document.createElement("div");
+            actions.className = "actions";
+
+            if (song.status !== "approved") {
+                const approve = document.createElement("button");
+                approve.className = "approve";
+                approve.textContent = "Akceptuj";
+                approve.onclick = () => updateStatus(song.id, "approved");
+                actions.append(approve);
+            }
+
+            if (song.status !== "rejected") {
+                const reject = document.createElement("button");
+                reject.className = "reject";
+                reject.textContent = "Odrzuć";
+                reject.onclick = () => updateStatus(song.id, "rejected");
+                actions.append(reject);
+            }
+
+            const remove = document.createElement("button");
+            remove.className = "delete";
+            remove.textContent = "Usuń";
+            remove.onclick = () => deleteSong(song.id);
+            actions.append(remove);
+
+            item.append(actions);
+        }
+
+        songList.append(item);
+    }
+}
+
+async function updateStatus(id, status) {
+    const { error } = await db
+        .from("songs")
+        .update({ status })
+        .eq("id", id);
+
+    if (error) {
+        alert("Błąd: " + error.message);
+        return;
+    }
+
+    loadSongs();
+}
+
+async function deleteSong(id) {
+    if (!confirm("Czy na pewno usunąć tę piosenkę?")) return;
+
+    const { error } = await db
+        .from("songs")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        alert("Błąd: " + error.message);
+        return;
+    }
+
+    loadSongs();
+}
+
+document.getElementById("songForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const title = document.getElementById("title").value.trim();
+    const artist = document.getElementById("artist").value.trim();
+    const message = document.getElementById("formMessage");
+
+    if (!title) return;
+
+    message.textContent = "Wysyłanie...";
+
+    const { error } = await db
+        .from("songs")
+        .insert({
+            title,
+            artist,
+            status: "pending"
+        });
+
+    if (error) {
+        message.textContent = "Nie udało się wysłać: " + error.message;
+        return;
+    }
+
+    message.textContent = "Piosenka została wysłana do weryfikacji!";
+
+    e.target.reset();
+    loadSongs();
+});
+
+async function checkAdmin() {
+    const { data: { user } } = await db.auth.getUser();
+
+    isAdmin = false;
+
+    if (user) {
+        const { data, error } = await db
+            .from("admins")
+            .select("user_id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+        isAdmin = !error && !!data;
+    }
+
+    document.getElementById("loginCard").classList.toggle("hidden", isAdmin);
+    document.getElementById("adminCard").classList.toggle("hidden", !isAdmin);
+
+    if (isAdmin) {
+        document.getElementById("adminInfo").textContent =
+            "Zalogowano jako: " + user.email;
+    }
+
+    loadSongs();
+}
+
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const message = document.getElementById("loginMessage");
+
+    message.textContent = "Logowanie...";
+
+    const { error } = await db.auth.signInWithPassword({
+        email,
+        password
+    });
+
+    if (error) {
+        message.textContent = "Błąd logowania: " + error.message;
+        return;
+    }
+
+    message.textContent = "Zalogowano.";
+    await checkAdmin();
+});
+
+document.getElementById("logoutButton").addEventListener("click", async () => {
+    await db.auth.signOut();
+    isAdmin = false;
+    await checkAdmin();
+});
+
+db.auth.onAuthStateChange(() => {
+    setTimeout(checkAdmin, 0);
+});
+
+checkAdmin();
+</script>
+</body>
+</html>
