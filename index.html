@@ -5,7 +5,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Andrzejki szkolne</title>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -19,7 +18,7 @@ body {
     font-family: Arial, sans-serif;
 }
 
-.container { max-width: 760px; margin: auto; }
+.container { max-width: 800px; margin: auto; }
 
 h1 { text-align: center; margin-bottom: 8px; }
 
@@ -39,7 +38,7 @@ h1 { text-align: center; margin-bottom: 8px; }
 
 h2 { font-size: 19px; margin-top: 0; }
 
-input {
+input, select {
     width: 100%;
     padding: 13px;
     margin: 7px 0;
@@ -60,7 +59,7 @@ button {
 }
 
 button:disabled {
-    opacity: 0.6;
+    opacity: .5;
     cursor: not-allowed;
 }
 
@@ -74,19 +73,25 @@ button:disabled {
 .approve { background: #176b43; color: white; }
 .reject { background: #873333; color: white; }
 .delete { background: #343741; color: white; }
+.cancel { background: #343741; color: white; }
 
 .song {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    padding: 14px 0;
+    padding: 15px 0;
     border-bottom: 1px solid #30323a;
 }
 
 .song:last-child { border-bottom: 0; }
 
-.song-title { font-weight: bold; }
+.song-info { flex: 1; min-width: 0; }
+
+.song-title {
+    font-weight: bold;
+    overflow-wrap: anywhere;
+}
 
 .artist {
     color: #999;
@@ -104,13 +109,14 @@ button:disabled {
 
 .approved { background: #174b35; color: #76e4aa; }
 .pending { background: #59451a; color: #ffd77a; }
+.awaiting_owner { background: #243d61; color: #a9ceff; }
 .rejected { background: #542727; color: #ffaaaa; }
 
 .actions {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-top: 9px;
+    margin-top: 10px;
 }
 
 .actions button { padding: 8px 10px; }
@@ -121,7 +127,7 @@ button:disabled {
     margin-top: 10px;
 }
 
-.hidden { display: none; }
+.hidden { display: none !important; }
 
 .top-info {
     color: #999;
@@ -130,103 +136,304 @@ button:disabled {
     margin-bottom: 20px;
 }
 
-@media (max-width: 500px) {
-    .song {
-        align-items: flex-start;
-        flex-direction: column;
-    }
+.role-label {
+    color: #8eb6ff;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.private-reason {
+    margin-top: 9px;
+    padding: 10px;
+    background: #29232a;
+    border: 1px solid #49364b;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.private-reason strong {
+    color: #e5b5ff;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: rgba(0,0,0,.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+}
+
+.modal-content {
+    width: 100%;
+    max-width: 400px;
+    background: #191b20;
+    border: 1px solid #343741;
+    border-radius: 13px;
+    padding: 22px;
+}
+
+.modal-content button {
+    width: 100%;
+    margin-top: 9px;
+}
+
+.empty {
+    text-align: center;
+    color: #999;
+    padding: 20px 5px;
+}
+
+@media (max-width: 550px) {
+    .song { flex-direction: column; }
+    .actions { width: 100%; }
 }
 </style>
 </head>
 
 <body>
+
 <div class="container">
 
     <h1>🎵 Andrzejki szkolne</h1>
-    <div class="subtitle">Zaproponuj utwór i poczekaj na weryfikację</div>
+    <div class="subtitle">
+        Zaproponuj utwór i poczekaj na weryfikację
+    </div>
 
+    <!-- DODAWANIE PIOSENEK -->
     <div class="card">
         <h2>Dodaj piosenkę</h2>
 
         <form id="songForm">
-            <input id="title" placeholder="Tytuł piosenki" required maxlength="150">
-            <input id="artist" placeholder="Wykonawca (opcjonalnie)" maxlength="150">
-            <button class="primary" id="submitButton" type="submit">Wyślij propozycję</button>
+            <input
+                id="title"
+                placeholder="Tytuł piosenki"
+                required
+                maxlength="150"
+            >
+
+            <input
+                id="artist"
+                placeholder="Wykonawca (opcjonalnie)"
+                maxlength="150"
+            >
+
+            <button class="primary" id="submitButton" type="submit">
+                Wyślij propozycję
+            </button>
         </form>
 
         <div id="formMessage" class="message"></div>
     </div>
 
+    <!-- PUBLICZNA LISTA -->
     <div class="card">
         <h2>Lista utworów</h2>
         <div class="top-info" id="songCount">Ładowanie...</div>
         <div id="songList"></div>
     </div>
 
+    <!-- LOGOWANIE -->
     <div class="card" id="loginCard">
-        <h2>Panel administratora</h2>
+        <h2>Panel moderacji</h2>
+
         <form id="loginForm">
-            <input id="email" type="email" placeholder="Adres e-mail" required>
-            <input id="password" type="password" placeholder="Hasło" required>
-            <button class="primary" type="submit">Zaloguj się</button>
+            <input
+                id="email"
+                type="email"
+                placeholder="Adres e-mail"
+                required
+            >
+
+            <input
+                id="password"
+                type="password"
+                placeholder="Hasło"
+                required
+            >
+
+            <button class="primary" id="loginButton" type="submit">
+                Zaloguj się
+            </button>
         </form>
+
         <div id="loginMessage" class="message"></div>
     </div>
 
-    <div class="card hidden" id="adminCard">
-        <h2>Panel administratora</h2>
-        <p id="adminInfo" class="message">Zalogowano.</p>
-        <button id="logoutButton" class="delete">Wyloguj się</button>
-        <p class="message">Możesz teraz akceptować, odrzucać i usuwać piosenki.</p>
+    <!-- PANEL POMOCNIKA -->
+    <div class="card hidden" id="helperCard">
+        <div class="role-label">Panel pomocnika</div>
+        <h2>Weryfikacja pierwszego etapu</h2>
+
+        <p class="message">
+            Możesz wstępnie zaakceptować lub odrzucić zgłoszenia.
+            Ostateczną decyzję podejmuje właściciel.
+        </p>
+
+        <div id="helperList"></div>
+
+        <button id="helperLogout" class="delete">
+            Wyloguj się
+        </button>
+    </div>
+
+    <!-- PANEL WŁAŚCICIELA -->
+    <div class="card hidden" id="ownerCard">
+        <div class="role-label">Panel właściciela</div>
+        <h2>Ostateczna weryfikacja</h2>
+
+        <p id="ownerInfo" class="message"></p>
+
+        <div id="ownerList"></div>
+
+        <button id="ownerLogout" class="delete">
+            Wyloguj się
+        </button>
     </div>
 
 </div>
 
+<!-- OKNO WYBORU POWODU ODRZUCENIA -->
+<div id="reasonModal" class="modal hidden">
+    <div class="modal-content">
+        <h2>Powód odrzucenia</h2>
+
+        <p class="message">
+            Wybierz powód wstępnego odrzucenia piosenki.
+            Informacja będzie widoczna wyłącznie dla właściciela.
+        </p>
+
+        <button class="reject" id="fewWords">
+            Mało brzydkich słów
+        </button>
+
+        <button class="reject" id="manyWords">
+            Dużo brzydkich słów
+        </button>
+
+        <button class="cancel" id="cancelReason">
+            Anuluj
+        </button>
+
+        <div id="reasonMessage" class="message"></div>
+    </div>
+</div>
+
 <script>
-const SUPABASE_URL = "https://oxyqhdvotdcviorvhmxi.supabase.co";
-const SUPABASE_KEY = "sb_publishable_xrpYjsZi08JZ-EivDnvspg_xGRf0XXt";
+const SUPABASE_URL =
+    "https://oxyqhdvotdcviorvhmxi.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_xrpYjsZi08JZ-EivDnvspg_xGRf0XXt";
 
 const db = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_KEY
 );
 
-let isAdmin = false;
+let currentRole = "visitor";
+let currentUser = null;
 let loadVersion = 0;
+let selectedSongId = null;
+let actionInProgress = false;
 
 const songList = document.getElementById("songList");
 const songCount = document.getElementById("songCount");
+const helperList = document.getElementById("helperList");
+const ownerList = document.getElementById("ownerList");
 
 const statusNames = {
+    pending: "Czeka na pomocnika",
+    awaiting_owner: "Czeka na decyzję właściciela",
     approved: "Zaakceptowano",
-    pending: "Czeka na weryfikację",
     rejected: "Odrzucono"
 };
 
+const reasonNames = {
+    few_bad_words: "Mało brzydkich słów",
+    many_bad_words: "Dużo brzydkich słów"
+};
+
+function showMessage(element, message) {
+    element.textContent = message;
+}
+
+function makeButton(text, className, callback) {
+    const button = document.createElement("button");
+    button.textContent = text;
+    button.className = className;
+
+    button.addEventListener("click", callback);
+
+    return button;
+}
+
+function makeSongInfo(song) {
+    const info = document.createElement("div");
+    info.className = "song-info";
+
+    const title = document.createElement("div");
+    title.className = "song-title";
+    title.textContent = song.title;
+
+    const artist = document.createElement("div");
+    artist.className = "artist";
+    artist.textContent = song.artist || "Nie podano wykonawcy";
+
+    const status = document.createElement("span");
+    status.className = "status " + song.status;
+    status.textContent = statusNames[song.status] || song.status;
+
+    info.append(title, artist, status);
+
+    return info;
+}
+
+function makePrivateReason(review) {
+    const box = document.createElement("div");
+    box.className = "private-reason";
+
+    const heading = document.createElement("strong");
+    heading.textContent = "Powód wstępnego odrzucenia:";
+
+    const reason = document.createElement("div");
+    reason.textContent =
+        reasonNames[review.reason] || "Nie podano";
+
+    box.append(heading, reason);
+
+    return box;
+}
+
 async function loadSongs() {
-    const currentVersion = ++loadVersion;
+    const version = ++loadVersion;
 
     const { data, error } = await db
         .from("songs")
         .select("*")
         .order("created_at", { ascending: true });
 
-    // Pomijamy starsze zapytania, jeśli nowsze już się zakończyło.
-    if (currentVersion !== loadVersion) return;
+    if (version !== loadVersion) return;
 
     if (error) {
         songList.replaceChildren();
-        songList.textContent = "Nie udało się pobrać piosenek: " + error.message;
+        songList.textContent =
+            "Błąd pobierania: " + error.message;
         return;
     }
 
-    // Czyścimy listę dopiero po pobraniu danych.
     songList.replaceChildren();
 
-    songCount.textContent = "Liczba utworów: " + data.length;
+    songCount.textContent =
+        "Liczba utworów: " + data.length;
 
     if (!data.length) {
-        songList.textContent = "Nie ma jeszcze żadnych piosenek.";
+        songList.textContent =
+            "Nie ma jeszcze żadnych piosenek.";
         return;
     }
 
@@ -234,186 +441,467 @@ async function loadSongs() {
         const item = document.createElement("div");
         item.className = "song";
 
-        const info = document.createElement("div");
-
-        const title = document.createElement("div");
-        title.className = "song-title";
-        title.textContent = song.title;
-
-        const artist = document.createElement("div");
-        artist.className = "artist";
-        artist.textContent = song.artist || "Nie podano wykonawcy";
-
-        const status = document.createElement("span");
-        status.className = "status " + song.status;
-        status.textContent = statusNames[song.status] || song.status;
-
-        info.append(title, artist, status);
-        item.append(info);
-
-        if (isAdmin) {
-            const actions = document.createElement("div");
-            actions.className = "actions";
-
-            if (song.status !== "approved") {
-                const approve = document.createElement("button");
-                approve.className = "approve";
-                approve.textContent = "Akceptuj";
-                approve.onclick = () => updateStatus(song.id, "approved");
-                actions.append(approve);
-            }
-
-            if (song.status !== "rejected") {
-                const reject = document.createElement("button");
-                reject.className = "reject";
-                reject.textContent = "Odrzuć";
-                reject.onclick = () => updateStatus(song.id, "rejected");
-                actions.append(reject);
-            }
-
-            const remove = document.createElement("button");
-            remove.className = "delete";
-            remove.textContent = "Usuń";
-            remove.onclick = () => deleteSong(song.id);
-            actions.append(remove);
-
-            item.append(actions);
-        }
+        item.append(makeSongInfo(song));
 
         songList.append(item);
     }
 }
 
-async function updateStatus(id, status) {
-    const { error } = await db
+async function loadHelperPanel() {
+    helperList.replaceChildren();
+
+    const { data, error } = await db
         .from("songs")
-        .update({ status })
-        .eq("id", id);
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true });
 
     if (error) {
-        alert("Błąd: " + error.message);
+        helperList.textContent = error.message;
         return;
     }
 
-    await loadSongs();
-}
-
-async function deleteSong(id) {
-    if (!confirm("Czy na pewno usunąć tę piosenkę?")) return;
-
-    const { error } = await db
-        .from("songs")
-        .delete()
-        .eq("id", id);
-
-    if (error) {
-        alert("Błąd: " + error.message);
+    if (!data.length) {
+        helperList.innerHTML =
+            '<div class="empty">Brak nowych zgłoszeń do weryfikacji.</div>';
         return;
     }
 
-    await loadSongs();
+    for (const song of data) {
+        const item = document.createElement("div");
+        item.className = "song";
+
+        item.append(makeSongInfo(song));
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const approve = makeButton(
+            "Wstępnie zaakceptuj",
+            "approve",
+            () => helperReview(song.id, "approved", null)
+        );
+
+        const reject = makeButton(
+            "Odrzuć",
+            "reject",
+            () => openReasonModal(song.id)
+        );
+
+        actions.append(approve, reject);
+        item.append(actions);
+
+        helperList.append(item);
+    }
 }
 
-document.getElementById("songForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+async function loadOwnerPanel() {
+    ownerList.replaceChildren();
 
-    const form = e.currentTarget;
-    const submitButton = document.getElementById("submitButton");
+    const { data: songs, error } = await db
+        .from("songs")
+        .select("*")
+        .in("status", ["pending", "awaiting_owner"])
+        .order("created_at", { ascending: true });
 
-    if (submitButton.disabled) return;
+    if (error) {
+        ownerList.textContent = error.message;
+        return;
+    }
 
-    const title = document.getElementById("title").value.trim();
-    const artist = document.getElementById("artist").value.trim();
-    const message = document.getElementById("formMessage");
+    // Tę tabelę pobiera wyłącznie właściciel.
+    const { data: reviews, error: reviewError } = await db
+        .from("song_reviews")
+        .select("song_id, decision, reason, helper_id, created_at");
 
-    if (!title) return;
+    if (reviewError) {
+        ownerList.textContent =
+            "Nie udało się pobrać prywatnych ocen: " +
+            reviewError.message;
+        return;
+    }
 
-    submitButton.disabled = true;
-    message.textContent = "Wysyłanie...";
+    const reviewMap = new Map(
+        (reviews || []).map(review => [review.song_id, review])
+    );
+
+    if (!songs.length) {
+        ownerList.innerHTML =
+            '<div class="empty">Nie ma zgłoszeń oczekujących na decyzję.</div>';
+        return;
+    }
+
+    for (const song of songs) {
+        const item = document.createElement("div");
+        item.className = "song";
+
+        const info = makeSongInfo(song);
+        item.append(info);
+
+        const review = reviewMap.get(song.id);
+
+        if (review) {
+            if (review.decision === "rejected") {
+                item.append(makePrivateReason(review));
+            } else {
+                const note = document.createElement("div");
+                note.className = "private-reason";
+                note.textContent =
+                    "Pomocnik wstępnie zaakceptował tę piosenkę.";
+                item.append(note);
+            }
+        } else if (song.status === "pending") {
+            const note = document.createElement("div");
+            note.className = "message";
+            note.textContent =
+                "To zgłoszenie nie zostało jeszcze ocenione przez pomocnika. Możesz rozpatrzyć je samodzielnie.";
+            item.append(note);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        actions.append(
+            makeButton(
+                "Ostatecznie zaakceptuj",
+                "approve",
+                () => ownerDecision(song.id, "approved")
+            )
+        );
+
+        actions.append(
+            makeButton(
+                "Ostatecznie odrzuć",
+                "reject",
+                () => ownerDecision(song.id, "rejected")
+            )
+        );
+
+        actions.append(
+            makeButton(
+                "Usuń",
+                "delete",
+                () => deleteSong(song.id)
+            )
+        );
+
+        item.append(actions);
+        ownerList.append(item);
+    }
+}
+
+async function refreshPanels() {
+    await loadSongs();
+
+    if (currentRole === "helper") {
+        await loadHelperPanel();
+    }
+
+    if (currentRole === "owner") {
+        await loadOwnerPanel();
+    }
+}
+
+async function helperReview(songId, decision, reason) {
+    if (actionInProgress) return;
+
+    actionInProgress = true;
+
+    try {
+        const { error } = await db.rpc(
+            "helper_review_song",
+            {
+                p_song_id: songId,
+                p_decision: decision,
+                p_reason: reason
+            }
+        );
+
+        if (error) {
+            alert("Nie udało się zapisać decyzji: " + error.message);
+            return;
+        }
+
+        closeReasonModal();
+        await refreshPanels();
+
+    } finally {
+        actionInProgress = false;
+    }
+}
+
+async function ownerDecision(songId, decision) {
+    if (actionInProgress) return;
+
+    const text = decision === "approved"
+        ? "Czy na pewno ostatecznie zaakceptować tę piosenkę?"
+        : "Czy na pewno ostatecznie odrzucić tę piosenkę?";
+
+    if (!confirm(text)) return;
+
+    actionInProgress = true;
+
+    try {
+        const { error } = await db.rpc(
+            "owner_finalize_song",
+            {
+                p_song_id: songId,
+                p_decision: decision
+            }
+        );
+
+        if (error) {
+            alert("Nie udało się zapisać decyzji: " + error.message);
+            return;
+        }
+
+        await refreshPanels();
+
+    } finally {
+        actionInProgress = false;
+    }
+}
+
+async function deleteSong(songId) {
+    if (currentRole !== "owner") return;
+    if (actionInProgress) return;
+
+    if (!confirm(
+        "Czy na pewno usunąć tę piosenkę na stałe?"
+    )) return;
+
+    actionInProgress = true;
 
     try {
         const { error } = await db
             .from("songs")
-            .insert({
-                title,
-                artist,
-                status: "pending"
-            });
+            .delete()
+            .eq("id", songId);
 
         if (error) {
-            message.textContent = "Nie udało się wysłać: " + error.message;
+            alert("Nie udało się usunąć: " + error.message);
             return;
         }
 
-        message.textContent = "Piosenka została wysłana do weryfikacji!";
-        form.reset();
-        await loadSongs();
+        await refreshPanels();
 
     } finally {
-        submitButton.disabled = false;
+        actionInProgress = false;
     }
+}
+
+function openReasonModal(songId) {
+    selectedSongId = songId;
+
+    document.getElementById("reasonMessage").textContent = "";
+    document.getElementById("reasonModal").classList.remove("hidden");
+}
+
+function closeReasonModal() {
+    selectedSongId = null;
+    document.getElementById("reasonModal").classList.add("hidden");
+}
+
+document.getElementById("fewWords").addEventListener("click", async () => {
+    if (selectedSongId === null) return;
+
+    await helperReview(
+        selectedSongId,
+        "rejected",
+        "few_bad_words"
+    );
 });
 
-async function checkAdmin() {
-    const { data: { user }, error: userError } = await db.auth.getUser();
+document.getElementById("manyWords").addEventListener("click", async () => {
+    if (selectedSongId === null) return;
 
-    isAdmin = false;
+    await helperReview(
+        selectedSongId,
+        "rejected",
+        "many_bad_words"
+    );
+});
 
-    if (user && !userError) {
-        const { data, error } = await db
-            .from("admins")
-            .select("user_id")
-            .eq("user_id", user.id)
-            .maybeSingle();
+document.getElementById("cancelReason").addEventListener("click", () => {
+    closeReasonModal();
+});
 
-        isAdmin = !error && !!data;
+// Dodawanie piosenek
+document.getElementById("songForm").addEventListener(
+    "submit",
+    async (event) => {
+        event.preventDefault();
+
+        const button = document.getElementById("submitButton");
+        const message = document.getElementById("formMessage");
+
+        if (button.disabled) return;
+
+        const title = document.getElementById("title").value.trim();
+        const artist = document.getElementById("artist").value.trim();
+
+        if (!title) return;
+
+        button.disabled = true;
+        message.textContent = "Wysyłanie...";
+
+        try {
+            const { error } = await db
+                .from("songs")
+                .insert({
+                    title,
+                    artist,
+                    status: "pending"
+                });
+
+            if (error) {
+                message.textContent =
+                    "Nie udało się wysłać: " + error.message;
+                return;
+            }
+
+            message.textContent =
+                "Piosenka została wysłana do weryfikacji!";
+
+            event.target.reset();
+            await refreshPanels();
+
+        } finally {
+            button.disabled = false;
+        }
     }
+);
 
-    document.getElementById("loginCard").classList.toggle("hidden", isAdmin);
-    document.getElementById("adminCard").classList.toggle("hidden", !isAdmin);
+// Logowanie
+document.getElementById("loginForm").addEventListener(
+    "submit",
+    async (event) => {
+        event.preventDefault();
 
-    if (isAdmin) {
-        document.getElementById("adminInfo").textContent =
-            "Zalogowano jako: " + user.email;
+        const button = document.getElementById("loginButton");
+        const message = document.getElementById("loginMessage");
+
+        if (button.disabled) return;
+
+        button.disabled = true;
+        message.textContent = "Logowanie...";
+
+        try {
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+
+            const { error } = await db.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) {
+                message.textContent =
+                    "Błąd logowania: " + error.message;
+                return;
+            }
+
+            await initializeUser();
+
+            if (currentRole === "visitor") {
+                message.textContent =
+                    "To konto nie ma uprawnień do panelu moderacji.";
+            } else {
+                message.textContent = "Zalogowano.";
+            }
+
+        } finally {
+            button.disabled = false;
+        }
     }
+);
 
+async function logout() {
+    await db.auth.signOut();
+    currentRole = "visitor";
+    currentUser = null;
+    updatePanelsVisibility();
     await loadSongs();
 }
 
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+document.getElementById("helperLogout").addEventListener(
+    "click",
+    logout
+);
 
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-    const message = document.getElementById("loginMessage");
+document.getElementById("ownerLogout").addEventListener(
+    "click",
+    logout
+);
 
-    message.textContent = "Logowanie...";
+function updatePanelsVisibility() {
+    document.getElementById("loginCard")
+        .classList.toggle("hidden", currentRole !== "visitor");
 
-    const { error } = await db.auth.signInWithPassword({
-        email,
-        password
-    });
+    document.getElementById("helperCard")
+        .classList.toggle("hidden", currentRole !== "helper");
 
-    if (error) {
-        message.textContent = "Błąd logowania: " + error.message;
+    document.getElementById("ownerCard")
+        .classList.toggle("hidden", currentRole !== "owner");
+}
+
+async function initializeUser() {
+    const { data, error } = await db.auth.getUser();
+
+    if (error || !data.user) {
+        currentUser = null;
+        currentRole = "visitor";
+        updatePanelsVisibility();
+        await loadSongs();
         return;
     }
 
-    message.textContent = "Zalogowano.";
-    await checkAdmin();
+    currentUser = data.user;
+    currentRole = "visitor";
+
+    // Właściciel ma pierwszeństwo przed rolą pomocnika.
+    const { data: owner, error: ownerError } = await db
+        .from("admins")
+        .select("user_id")
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+
+    if (!ownerError && owner) {
+        currentRole = "owner";
+    } else {
+        const { data: helper, error: helperError } = await db
+            .from("helpers")
+            .select("user_id")
+            .eq("user_id", currentUser.id)
+            .maybeSingle();
+
+        if (!helperError && helper) {
+            currentRole = "helper";
+        }
+    }
+
+    updatePanelsVisibility();
+
+    if (currentRole === "owner") {
+        document.getElementById("ownerInfo").textContent =
+            "Zalogowano jako właściciel: " + currentUser.email;
+    }
+
+    await refreshPanels();
+}
+
+// Zdarzenia logowania i wylogowania
+db.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        setTimeout(() => {
+            initializeUser();
+        }, 0);
+    }
 });
 
-document.getElementById("logoutButton").addEventListener("click", async () => {
-    await db.auth.signOut();
-    isAdmin = false;
-    await checkAdmin();
-});
-
-db.auth.onAuthStateChange(() => {
-    setTimeout(checkAdmin, 0);
-});
-
-checkAdmin();
+// Start strony
+initializeUser();
 </script>
+
 </body>
 </html>
