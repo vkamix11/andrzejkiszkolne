@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -22,52 +23,245 @@ button{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:b
 .private-reason{margin-top:9px;padding:10px;background:#29232a;border:1px solid #49364b;border-radius:8px;font-size:13px}.private-reason strong{color:#e5b5ff}
 .modal{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:15px}
 .modal-content{width:100%;max-width:400px;background:#191b20;border:1px solid #343741;border-radius:13px;padding:22px}.modal-content button{width:100%;margin-top:9px}
-.empty{text-align:center;color:#999;padding:20px 5px}@media(max-width:550px){.song{flex-direction:column}.actions{width:100%}}
+.empty{text-align:center;color:#999;padding:20px 5px}
+.duplicate-highlight{display:inline-block;color:#fff;background:rgba(57,120,237,.35);outline:2px solid #5790ff;border-radius:7px;padding:4px 7px;margin:-4px -7px;animation:duplicatePulse 1s ease-in-out 3;scroll-margin-top:100px}
+@keyframes duplicatePulse{0%,100%{background:rgba(57,120,237,.18);box-shadow:0 0 0 0 rgba(87,144,255,0)}50%{background:rgba(57,120,237,.5);box-shadow:0 0 0 7px rgba(87,144,255,.15)}}
+@media(max-width:550px){.song{flex-direction:column}.actions{width:100%}}
 </style>
 </head>
 <body>
 <div class="container">
-<h1>🎵 Andrzejki szkolne</h1><div class="subtitle">Zaproponuj utwór i poczekaj na weryfikację</div>
-<div class="card"><h2>Dodaj piosenkę</h2><form id="songForm">
+<h1>🎵 Andrzejki szkolne</h1>
+<div class="subtitle">Zaproponuj utwór i poczekaj na weryfikację</div>
+
+<div class="card">
+<h2>Dodaj piosenkę</h2>
+<form id="songForm">
 <input id="title" placeholder="Tytuł piosenki" required maxlength="150">
 <input id="artist" placeholder="Wykonawca (opcjonalnie)" maxlength="150">
-<button class="primary" id="submitButton" type="submit">Wyślij propozycję</button></form><div id="formMessage" class="message"></div></div>
-<div class="card"><h2>Lista utworów</h2><div class="top-info" id="songCount">Ładowanie...</div><div id="songList"></div></div>
-<div class="card" id="loginCard"><h2>Panel moderacji</h2><form id="loginForm">
-<input id="email" type="email" placeholder="Adres e-mail" required><input id="password" type="password" placeholder="Hasło" required>
-<button class="primary" id="loginButton" type="submit">Zaloguj się</button></form><div id="loginMessage" class="message"></div></div>
-<div class="card hidden" id="helperCard"><div class="role-label">Panel pomocnika</div><h2>Weryfikacja pierwszego etapu</h2>
-<p class="message">Możesz wstępnie zaakceptować lub odrzucić zgłoszenia. Ostateczną decyzję podejmuje właściciel.</p><div id="helperList"></div><button id="helperLogout" class="delete">Wyloguj się</button></div>
-<div class="card hidden" id="ownerCard"><div class="role-label">Panel właściciela</div><h2>Ostateczna weryfikacja</h2><p id="ownerInfo" class="message"></p><div id="ownerList"></div><button id="ownerLogout" class="delete">Wyloguj się</button></div>
+<button class="primary" id="submitButton" type="submit">Wyślij propozycję</button>
+</form>
+<div id="formMessage" class="message"></div>
 </div>
-<div id="reasonModal" class="modal hidden"><div class="modal-content"><h2>Powód odrzucenia</h2>
+
+<div class="card">
+<h2>Lista utworów</h2>
+<div class="top-info" id="songCount">Ładowanie...</div>
+<div id="songList"></div>
+</div>
+
+<div class="card" id="loginCard">
+<h2>Panel moderacji</h2>
+<form id="loginForm">
+<input id="email" type="email" placeholder="Adres e-mail" required>
+<input id="password" type="password" placeholder="Hasło" required>
+<button class="primary" id="loginButton" type="submit">Zaloguj się</button>
+</form>
+<div id="loginMessage" class="message"></div>
+</div>
+
+<div class="card hidden" id="helperCard">
+<div class="role-label">Panel pomocnika</div>
+<h2>Weryfikacja pierwszego etapu</h2>
+<p class="message">Możesz wstępnie zaakceptować lub odrzucić zgłoszenia. Ostateczną decyzję podejmuje właściciel.</p>
+<div id="helperList"></div>
+<button id="helperLogout" class="delete">Wyloguj się</button>
+</div>
+
+<div class="card hidden" id="ownerCard">
+<div class="role-label">Panel właściciela</div>
+<h2>Ostateczna weryfikacja</h2>
+<p id="ownerInfo" class="message"></p>
+<div id="ownerList"></div>
+<button id="ownerLogout" class="delete">Wyloguj się</button>
+</div>
+</div>
+
+<div id="reasonModal" class="modal hidden">
+<div class="modal-content">
+<h2>Powód odrzucenia</h2>
 <p class="message">Wybierz powód wstępnego odrzucenia piosenki. Informacja będzie widoczna wyłącznie dla właściciela.</p>
-<button class="reject" id="fewWords">Mało brzydkich słów</button><button class="reject" id="manyWords">Dużo brzydkich słów</button><button class="cancel" id="cancelReason">Anuluj</button><div id="reasonMessage" class="message"></div></div></div>
+<button class="reject" id="fewWords">Mało brzydkich słów</button>
+<button class="reject" id="manyWords">Dużo brzydkich słów</button>
+<button class="cancel" id="cancelReason">Anuluj</button>
+<div id="reasonMessage" class="message"></div>
+</div>
+</div>
+
 <script>
 const SUPABASE_URL="https://oxyqhdvotdcviorvhmxi.supabase.co";
 const SUPABASE_KEY="sb_publishable_xrpYjsZi08JZ-EivDnvspg_xGRf0XXt";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
 let currentRole="visitor",currentUser=null,loadVersion=0,selectedSongId=null,actionInProgress=false;
-const songList=document.getElementById("songList"),songCount=document.getElementById("songCount"),helperList=document.getElementById("helperList"),ownerList=document.getElementById("ownerList");
-const statusNames={pending:"Czeka na weryfikację",awaiting_owner:"Czeka na decyzję właściciela",approved:"Zaakceptowano",rejected:"Odrzucono"};
-const reasonNames={few_bad_words:"Mało brzydkich słów",many_bad_words:"Dużo brzydkich słów"};
-function makeButton(text,cls,callback){const b=document.createElement("button");b.textContent=text;b.className=cls;b.addEventListener("click",callback);return b}
-function makeSongInfo(song){const info=document.createElement("div");info.className="song-info";const title=document.createElement("div");title.className="song-title";title.textContent=song.title;const artist=document.createElement("div");artist.className="artist";artist.textContent=song.artist||"Nie podano wykonawcy";const status=document.createElement("span");status.className="status "+song.status;status.textContent=statusNames[song.status]||song.status;info.append(title,artist,status);return info}
-function makePrivateReason(review){const box=document.createElement("div");box.className="private-reason";const heading=document.createElement("strong");heading.textContent="Powód wstępnego odrzucenia:";const reason=document.createElement("div");reason.textContent=reasonNames[review.reason]||"Nie podano";box.append(heading,reason);return box}
-async function loadSongs(){const version=++loadVersion;const {data,error}=await db.from("songs").select("*").order("created_at",{ascending:true});if(version!==loadVersion)return;if(error){songList.replaceChildren();songList.textContent="Błąd pobierania: "+error.message;return}songList.replaceChildren();songCount.textContent="Liczba utworów: "+data.length;if(!data.length){songList.textContent="Nie ma jeszcze żadnych piosenek.";return}for(const song of data){const item=document.createElement("div");item.className="song";item.append(makeSongInfo(song));songList.append(item)}}
-async function loadHelperPanel(){helperList.replaceChildren();const {data,error}=await db.from("songs").select("*").eq("status","pending").order("created_at",{ascending:true});if(error){helperList.textContent=error.message;return}if(!data.length){helperList.innerHTML='<div class="empty">Brak nowych zgłoszeń do weryfikacji.</div>';return}for(const song of data){const item=document.createElement("div");item.className="song";item.append(makeSongInfo(song));const actions=document.createElement("div");actions.className="actions";actions.append(makeButton("Wstępnie zaakceptuj","approve",()=>helperReview(song.id,"approved",null)),makeButton("Odrzuć","reject",()=>openReasonModal(song.id)));item.append(actions);helperList.append(item)}}
+
+const songList=document.getElementById("songList");
+const songCount=document.getElementById("songCount");
+const helperList=document.getElementById("helperList");
+const ownerList=document.getElementById("ownerList");
+
+const statusNames={
+pending:"Czeka na weryfikację",
+awaiting_owner:"Czeka na decyzję właściciela",
+approved:"Zaakceptowano",
+rejected:"Odrzucono"
+};
+
+const reasonNames={
+few_bad_words:"Mało brzydkich słów",
+many_bad_words:"Dużo brzydkich słów"
+};
+
+function makeButton(text,cls,callback){
+const b=document.createElement("button");
+b.textContent=text;
+b.className=cls;
+b.addEventListener("click",callback);
+return b;
+}
+
+function makeSongInfo(song){
+const info=document.createElement("div");
+info.className="song-info";
+
+const title=document.createElement("div");
+title.className="song-title";
+title.textContent=song.title;
+
+const artist=document.createElement("div");
+artist.className="artist";
+artist.textContent=song.artist||"Nie podano wykonawcy";
+
+const status=document.createElement("span");
+status.className="status "+song.status;
+status.textContent=statusNames[song.status]||song.status;
+
+info.append(title,artist,status);
+return info;
+}
+
+function makePrivateReason(review){
+const box=document.createElement("div");
+box.className="private-reason";
+
+const heading=document.createElement("strong");
+heading.textContent="Powód wstępnego odrzucenia:";
+
+const reason=document.createElement("div");
+reason.textContent=reasonNames[review.reason]||"Nie podano";
+
+box.append(heading,reason);
+return box;
+}
+
+async function loadSongs(){
+const version=++loadVersion;
+
+const {data,error}=await db
+.from("songs")
+.select("*")
+.order("created_at",{ascending:true});
+
+if(version!==loadVersion)return;
+
+if(error){
+songList.replaceChildren();
+songList.textContent="Błąd pobierania: "+error.message;
+return;
+}
+
+songList.replaceChildren();
+songCount.textContent="Liczba utworów: "+data.length;
+
+if(!data.length){
+songList.textContent="Nie ma jeszcze żadnych piosenek.";
+return;
+}
+
+for(const song of data){
+const item=document.createElement("div");
+item.className="song";
+item.id="song-item-"+song.id;
+
+const info=makeSongInfo(song);
+info.querySelector(".song-title").id="song-title-"+song.id;
+
+item.append(info);
+songList.append(item);
+}
+}
+
+async function loadHelperPanel(){
+helperList.replaceChildren();
+
+const {data,error}=await db
+.from("songs")
+.select("*")
+.eq("status","pending")
+.order("created_at",{ascending:true});
+
+if(error){
+helperList.textContent=error.message;
+return;
+}
+
+if(!data.length){
+helperList.innerHTML='<div class="empty">Brak nowych zgłoszeń do weryfikacji.</div>';
+return;
+}
+
+for(const song of data){
+const item=document.createElement("div");
+item.className="song";
+item.append(makeSongInfo(song));
+
+const actions=document.createElement("div");
+actions.className="actions";
+
+actions.append(
+makeButton("Wstępnie zaakceptuj","approve",()=>helperReview(song.id,"approved",null)),
+makeButton("Odrzuć","reject",()=>openReasonModal(song.id))
+);
+
+item.append(actions);
+helperList.append(item);
+}
+}
+
 async function loadOwnerPanel(){
 ownerList.replaceChildren();
-const {data:songs,error}=await db.from("songs").select("*").order("created_at",{ascending:true});
-if(error){ownerList.textContent=error.message;return}
-const {data:reviews,error:reviewError}=await db.from("song_reviews").select("song_id,decision,reason,helper_id,created_at");
-if(reviewError){ownerList.textContent="Nie udało się pobrać prywatnych ocen: "+reviewError.message;return}
+
+const {data:songs,error}=await db
+.from("songs")
+.select("*")
+.order("created_at",{ascending:true});
+
+if(error){
+ownerList.textContent=error.message;
+return;
+}
+
+const {data:reviews,error:reviewError}=await db
+.from("song_reviews")
+.select("song_id,decision,reason,helper_id,created_at");
+
+if(reviewError){
+ownerList.textContent="Nie udało się pobrać prywatnych ocen: "+reviewError.message;
+return;
+}
+
 const reviewMap=new Map((reviews||[]).map(r=>[r.song_id,r]));
-if(!songs.length){ownerList.innerHTML='<div class="empty">Nie ma jeszcze żadnych piosenek.</div>';return}
+
+if(!songs.length){
+ownerList.innerHTML='<div class="empty">Nie ma jeszcze żadnych piosenek.</div>';
+return;
+}
+
 for(const song of songs){
 const item=document.createElement("div");
 item.className="song";
 item.append(makeSongInfo(song));
+
 const review=reviewMap.get(song.id);
 
 if(song.status==="pending"){
@@ -76,8 +270,9 @@ note.className="message";
 note.textContent="To zgłoszenie nie zostało jeszcze ocenione przez pomocnika. Możesz rozpatrzyć je samodzielnie.";
 item.append(note);
 }else if(song.status==="awaiting_owner"){
-if(review&&review.decision==="rejected")item.append(makePrivateReason(review));
-else if(review){
+if(review&&review.decision==="rejected"){
+item.append(makePrivateReason(review));
+}else if(review){
 const note=document.createElement("div");
 note.className="private-reason";
 note.textContent="Pomocnik wstępnie zaakceptował tę piosenkę.";
@@ -101,26 +296,313 @@ makeButton("Ostatecznie odrzuć","reject",()=>ownerDecision(song.id,"rejected"))
 }
 
 actions.append(makeButton("Usuń","delete",()=>deleteSong(song.id)));
+
 item.append(actions);
 ownerList.append(item);
 }
 }
-async function refreshPanels(){await loadSongs();if(currentRole==="helper")await loadHelperPanel();if(currentRole==="owner")await loadOwnerPanel()}
-async function helperReview(songId,decision,reason){if(actionInProgress)return;actionInProgress=true;try{const {error}=await db.rpc("helper_review_song",{p_song_id:songId,p_decision:decision,p_reason:reason});if(error){alert("Nie udało się zapisać decyzji: "+error.message);return}closeReasonModal();await refreshPanels()}finally{actionInProgress=false}}
-async function ownerDecision(songId,decision){if(actionInProgress)return;const text=decision==="approved"?"Czy na pewno ostatecznie zaakceptować tę piosenkę?":"Czy na pewno ostatecznie odrzucić tę piosenkę?";if(!confirm(text))return;actionInProgress=true;try{const {error}=await db.rpc("owner_finalize_song",{p_song_id:songId,p_decision:decision});if(error){alert("Nie udało się zapisać decyzji: "+error.message);return}await refreshPanels()}finally{actionInProgress=false}}
-async function deleteSong(songId){if(currentRole!=="owner"||actionInProgress)return;if(!confirm("Czy na pewno usunąć tę piosenkę na stałe?"))return;actionInProgress=true;try{const {error}=await db.from("songs").delete().eq("id",songId);if(error){alert("Nie udało się usunąć: "+error.message);return}await refreshPanels()}finally{actionInProgress=false}}
-function openReasonModal(id){selectedSongId=id;document.getElementById("reasonMessage").textContent="";document.getElementById("reasonModal").classList.remove("hidden")}
-function closeReasonModal(){selectedSongId=null;document.getElementById("reasonModal").classList.add("hidden")}
-document.getElementById("fewWords").addEventListener("click",async()=>{if(selectedSongId!==null)await helperReview(selectedSongId,"rejected","few_bad_words")});
-document.getElementById("manyWords").addEventListener("click",async()=>{if(selectedSongId!==null)await helperReview(selectedSongId,"rejected","many_bad_words")});
+
+async function refreshPanels(){
+await loadSongs();
+if(currentRole==="helper")await loadHelperPanel();
+if(currentRole==="owner")await loadOwnerPanel();
+}
+
+async function helperReview(songId,decision,reason){
+if(actionInProgress)return;
+actionInProgress=true;
+
+try{
+const {error}=await db.rpc("helper_review_song",{
+p_song_id:songId,
+p_decision:decision,
+p_reason:reason
+});
+
+if(error){
+alert("Nie udało się zapisać decyzji: "+error.message);
+return;
+}
+
+closeReasonModal();
+await refreshPanels();
+}finally{
+actionInProgress=false;
+}
+}
+
+async function ownerDecision(songId,decision){
+if(actionInProgress)return;
+
+const text=decision==="approved"
+?"Czy na pewno ostatecznie zaakceptować tę piosenkę?"
+:"Czy na pewno ostatecznie odrzucić tę piosenkę?";
+
+if(!confirm(text))return;
+
+actionInProgress=true;
+
+try{
+const {error}=await db.rpc("owner_finalize_song",{
+p_song_id:songId,
+p_decision:decision
+});
+
+if(error){
+alert("Nie udało się zapisać decyzji: "+error.message);
+return;
+}
+
+await refreshPanels();
+}finally{
+actionInProgress=false;
+}
+}
+
+async function deleteSong(songId){
+if(currentRole!=="owner"||actionInProgress)return;
+if(!confirm("Czy na pewno usunąć tę piosenkę na stałe?"))return;
+
+actionInProgress=true;
+
+try{
+const {error}=await db.from("songs").delete().eq("id",songId);
+
+if(error){
+alert("Nie udało się usunąć: "+error.message);
+return;
+}
+
+await refreshPanels();
+}finally{
+actionInProgress=false;
+}
+}
+
+function openReasonModal(id){
+selectedSongId=id;
+document.getElementById("reasonMessage").textContent="";
+document.getElementById("reasonModal").classList.remove("hidden");
+}
+
+function closeReasonModal(){
+selectedSongId=null;
+document.getElementById("reasonModal").classList.add("hidden");
+}
+
+document.getElementById("fewWords").addEventListener("click",async()=>{
+if(selectedSongId!==null)await helperReview(selectedSongId,"rejected","few_bad_words");
+});
+
+document.getElementById("manyWords").addEventListener("click",async()=>{
+if(selectedSongId!==null)await helperReview(selectedSongId,"rejected","many_bad_words");
+});
+
 document.getElementById("cancelReason").addEventListener("click",closeReasonModal);
-document.getElementById("songForm").addEventListener("submit",async e=>{e.preventDefault();const button=document.getElementById("submitButton"),message=document.getElementById("formMessage");if(button.disabled)return;const title=document.getElementById("title").value.trim(),artist=document.getElementById("artist").value.trim();if(!title)return;button.disabled=true;message.textContent="Wysyłanie...";try{const {error}=await db.from("songs").insert({title,artist,status:"pending"});if(error){message.textContent="Nie udało się wysłać: "+error.message;return}message.textContent="Piosenka została wysłana do weryfikacji!";e.target.reset();await refreshPanels()}finally{button.disabled=false}});
-document.getElementById("loginForm").addEventListener("submit",async e=>{e.preventDefault();const button=document.getElementById("loginButton"),message=document.getElementById("loginMessage");if(button.disabled)return;button.disabled=true;message.textContent="Logowanie...";try{const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;const {error}=await db.auth.signInWithPassword({email,password});if(error){message.textContent="Błąd logowania: "+error.message;return}await initializeUser();message.textContent=currentRole==="visitor"?"To konto nie ma uprawnień do panelu moderacji.":"Zalogowano."}finally{button.disabled=false}});
-async function logout(){await db.auth.signOut();currentRole="visitor";currentUser=null;updatePanelsVisibility();await loadSongs()}
-document.getElementById("helperLogout").addEventListener("click",logout);document.getElementById("ownerLogout").addEventListener("click",logout);
-function updatePanelsVisibility(){document.getElementById("loginCard").classList.toggle("hidden",currentRole!=="visitor");document.getElementById("helperCard").classList.toggle("hidden",currentRole!=="helper");document.getElementById("ownerCard").classList.toggle("hidden",currentRole!=="owner")}
-async function initializeUser(){const {data,error}=await db.auth.getUser();if(error||!data.user){currentUser=null;currentRole="visitor";updatePanelsVisibility();await loadSongs();return}currentUser=data.user;currentRole="visitor";const {data:owner,error:ownerError}=await db.from("admins").select("user_id").eq("user_id",currentUser.id).maybeSingle();if(!ownerError&&owner)currentRole="owner";else{const {data:helper,error:helperError}=await db.from("helpers").select("user_id").eq("user_id",currentUser.id).maybeSingle();if(!helperError&&helper)currentRole="helper"}updatePanelsVisibility();if(currentRole==="owner")document.getElementById("ownerInfo").textContent="Zalogowano jako właściciel: "+currentUser.email;await refreshPanels()}
-db.auth.onAuthStateChange(event=>{if(event==="SIGNED_IN"||event==="SIGNED_OUT")setTimeout(()=>initializeUser(),0)});
+
+/* WYKRYWANIE DUPLIKATÓW */
+
+function normalizeSongTitle(title){
+return (title||"")
+.normalize("NFKC")
+.trim()
+.replace(/\s+/g," ")
+.toLocaleLowerCase("pl")
+.replace(/[\u2018\u2019]/g,"'")
+.replace(/[\u201C\u201D]/g,'"');
+}
+
+async function findDuplicateSong(title){
+const {data,error}=await db
+.from("songs")
+.select("id,title");
+
+if(error)throw error;
+
+const normalized=normalizeSongTitle(title);
+
+return (data||[]).find(song=>
+normalizeSongTitle(song.title)===normalized
+)||null;
+}
+
+async function showDuplicateSong(song){
+const message=document.getElementById("formMessage");
+
+message.textContent="Ta piosenka jest już na liście! Zobacz sam!";
+message.style.color="#8eb6ff";
+
+await loadSongs();
+
+const titleElement=document.getElementById("song-title-"+song.id);
+
+if(titleElement){
+titleElement.classList.remove("duplicate-highlight");
+void titleElement.offsetWidth;
+titleElement.classList.add("duplicate-highlight");
+
+titleElement.scrollIntoView({
+behavior:"smooth",
+block:"center"
+});
+}
+}
+
+/* DODAWANIE PIOSENEK */
+
+document.getElementById("songForm").addEventListener("submit",async e=>{
+e.preventDefault();
+
+const button=document.getElementById("submitButton");
+const message=document.getElementById("formMessage");
+
+if(button.disabled)return;
+
+const title=document.getElementById("title").value.trim();
+const artist=document.getElementById("artist").value.trim();
+
+if(!title)return;
+
+button.disabled=true;
+message.textContent="Sprawdzam, czy ta piosenka jest już na liście...";
+message.style.color="#aaa";
+
+try{
+const duplicate=await findDuplicateSong(title);
+
+if(duplicate){
+await showDuplicateSong(duplicate);
+return;
+}
+
+message.textContent="Wysyłanie...";
+
+const {error}=await db.from("songs").insert({
+title,
+artist,
+status:"pending"
+});
+
+if(error){
+message.textContent="Nie udało się wysłać: "+error.message;
+message.style.color="#ffaaaa";
+return;
+}
+
+message.textContent="Piosenka została wysłana do weryfikacji!";
+message.style.color="#76e4aa";
+
+e.target.reset();
+await refreshPanels();
+
+}catch(error){
+message.textContent="Nie udało się sprawdzić listy: "+error.message;
+message.style.color="#ffaaaa";
+}finally{
+button.disabled=false;
+}
+});
+
+/* LOGOWANIE */
+
+document.getElementById("loginForm").addEventListener("submit",async e=>{
+e.preventDefault();
+
+const button=document.getElementById("loginButton");
+const message=document.getElementById("loginMessage");
+
+if(button.disabled)return;
+
+button.disabled=true;
+message.textContent="Logowanie...";
+
+try{
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value;
+
+const {error}=await db.auth.signInWithPassword({email,password});
+
+if(error){
+message.textContent="Błąd logowania: "+error.message;
+return;
+}
+
+await initializeUser();
+
+message.textContent=currentRole==="visitor"
+?"To konto nie ma uprawnień do panelu moderacji."
+:"Zalogowano.";
+
+}finally{
+button.disabled=false;
+}
+});
+
+async function logout(){
+await db.auth.signOut();
+currentRole="visitor";
+currentUser=null;
+updatePanelsVisibility();
+await loadSongs();
+}
+
+document.getElementById("helperLogout").addEventListener("click",logout);
+document.getElementById("ownerLogout").addEventListener("click",logout);
+
+function updatePanelsVisibility(){
+document.getElementById("loginCard").classList.toggle("hidden",currentRole!=="visitor");
+document.getElementById("helperCard").classList.toggle("hidden",currentRole!=="helper");
+document.getElementById("ownerCard").classList.toggle("hidden",currentRole!=="owner");
+}
+
+async function initializeUser(){
+const {data,error}=await db.auth.getUser();
+
+if(error||!data.user){
+currentUser=null;
+currentRole="visitor";
+updatePanelsVisibility();
+await loadSongs();
+return;
+}
+
+currentUser=data.user;
+currentRole="visitor";
+
+const {data:owner,error:ownerError}=await db
+.from("admins")
+.select("user_id")
+.eq("user_id",currentUser.id)
+.maybeSingle();
+
+if(!ownerError&&owner){
+currentRole="owner";
+}else{
+const {data:helper,error:helperError}=await db
+.from("helpers")
+.select("user_id")
+.eq("user_id",currentUser.id)
+.maybeSingle();
+
+if(!helperError&&helper)currentRole="helper";
+}
+
+updatePanelsVisibility();
+
+if(currentRole==="owner"){
+document.getElementById("ownerInfo").textContent=
+"Zalogowano jako właściciel: "+currentUser.email;
+}
+
+await refreshPanels();
+}
+
+db.auth.onAuthStateChange(event=>{
+if(event==="SIGNED_IN"||event==="SIGNED_OUT"){
+setTimeout(()=>initializeUser(),0);
+}
+});
+
 initializeUser();
 </script>
 </body>
