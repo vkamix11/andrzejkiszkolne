@@ -6,41 +6,88 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Andrzejki szkolne</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
-*{box-sizing:border-box}body{margin:0;padding:25px 15px;background:#101114;color:#f5f5f5;font-family:Arial,sans-serif}
-.container{max-width:800px;margin:auto}h1{text-align:center;margin-bottom:8px}.subtitle{text-align:center;color:#999;margin-bottom:30px}
-.card{background:#191b20;border:1px solid #292c33;border-radius:13px;padding:20px;margin-bottom:20px}h2{font-size:19px;margin-top:0}
+*{box-sizing:border-box}
+body{margin:0;padding:25px 15px;background:#101114;color:#f5f5f5;font-family:Arial,sans-serif}
+.container{max-width:800px;margin:auto}
+h1{text-align:center;margin-bottom:8px}
+.subtitle{text-align:center;color:#999;margin-bottom:30px}
+.card{background:#191b20;border:1px solid #292c33;border-radius:13px;padding:20px;margin-bottom:20px}
+h2{font-size:19px;margin-top:0}
 input{width:100%;padding:13px;margin:7px 0;background:#101114;border:1px solid #343741;border-radius:8px;color:white;font-size:15px}
-button{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:bold;font-size:14px}button:disabled{opacity:.5;cursor:not-allowed}
-.primary{background:#3978ed;color:white;width:100%;margin-top:8px}.approve{background:#176b43;color:white}.reject{background:#873333;color:white}.delete,.cancel{background:#343741;color:white}
-.song{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:15px 0;border-bottom:1px solid #30323a}.song:last-child{border-bottom:0}
-.song-info{flex:1;min-width:0}.song-title{font-weight:bold;overflow-wrap:anywhere}.artist{color:#999;font-size:13px;margin-top:5px}
+button{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:bold;font-size:14px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.primary{background:#3978ed;color:white;width:100%;margin-top:8px}
+.approve{background:#176b43;color:white}
+.reject{background:#873333;color:white}
+.delete,.cancel{background:#343741;color:white}
+.song{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:15px 0;border-bottom:1px solid #30323a}
+.song:last-child{border-bottom:0}
+.song-info{flex:1;min-width:0}
+.song-title{font-weight:bold;overflow-wrap:anywhere}
+.artist{color:#999;font-size:13px;margin-top:5px}
 .status{display:inline-block;font-size:11px;padding:5px 8px;border-radius:20px;margin-top:7px}
-.approved{background:#174b35;color:#76e4aa}.pending{background:#59451a;color:#ffd77a}.awaiting_owner{background:#243d61;color:#a9ceff}.rejected{background:#542727;color:#ffaaaa}
-.actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.actions button{padding:8px 10px}
-.message{color:#aaa;font-size:13px;margin-top:10px}.hidden{display:none!important}.top-info{color:#999;font-size:13px;text-align:center;margin-bottom:20px}
+.approved{background:#174b35;color:#76e4aa}
+.pending{background:#59451a;color:#ffd77a}
+.awaiting_owner{background:#243d61;color:#a9ceff}
+.rejected{background:#542727;color:#ffaaaa}
+.actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.actions button{padding:8px 10px}
+.message{color:#aaa;font-size:13px;margin-top:10px;line-height:1.5}
+.hidden{display:none!important}
+.top-info{color:#999;font-size:13px;text-align:center;margin-bottom:20px}
 .role-label{color:#8eb6ff;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px}
-.private-reason{margin-top:9px;padding:10px;background:#29232a;border:1px solid #49364b;border-radius:8px;font-size:13px}.private-reason strong{color:#e5b5ff}
+.private-reason{margin-top:9px;padding:10px;background:#29232a;border:1px solid #49364b;border-radius:8px;font-size:13px}
+.private-reason strong{color:#e5b5ff}
 .modal{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:15px}
-.modal-content{width:100%;max-width:400px;background:#191b20;border:1px solid #343741;border-radius:13px;padding:22px}.modal-content button{width:100%;margin-top:9px}
+.modal-content{width:100%;max-width:400px;background:#191b20;border:1px solid #343741;border-radius:13px;padding:22px}
+.modal-content button{width:100%;margin-top:9px}
 .empty{text-align:center;color:#999;padding:20px 5px}
 .duplicate-highlight{display:inline-block;color:#fff;background:rgba(57,120,237,.35);outline:2px solid #5790ff;border-radius:7px;padding:4px 7px;margin:-4px -7px;animation:duplicatePulse 1s ease-in-out 3;scroll-margin-top:100px}
 @keyframes duplicatePulse{0%,100%{background:rgba(57,120,237,.18);box-shadow:0 0 0 0 rgba(87,144,255,0)}50%{background:rgba(57,120,237,.5);box-shadow:0 0 0 7px rgba(87,144,255,.15)}}
-@media(max-width:550px){.song{flex-direction:column}.actions{width:100%}}
+
+.deadline-info{padding:12px;background:#22252c;border:1px solid #343741;border-radius:9px;font-size:13px;color:#bbb;line-height:1.6;margin-bottom:15px}
+.deadline-info strong{color:#fff}
+.vote-song{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid #30323a;cursor:pointer}
+.vote-song:last-child{border-bottom:0}
+.vote-song input{width:19px;height:19px;min-width:19px;margin:2px 0;accent-color:#3978ed;cursor:pointer}
+.vote-song-info{flex:1;min-width:0}
+.vote-song-title{font-weight:bold;overflow-wrap:anywhere}
+.vote-song-artist{font-size:13px;color:#999;margin-top:5px}
+.vote-count{color:#8eb6ff;font-size:13px;font-weight:bold}
+.vote-result{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #30323a}
+.vote-result:last-child{border-bottom:0}
+.vote-position{font-size:18px;font-weight:bold;color:#8eb6ff;min-width:28px}
+.vote-result-info{flex:1;min-width:0}
+.vote-bar{height:6px;background:#30343e;border-radius:10px;overflow:hidden;margin-top:8px}
+.vote-bar-fill{height:100%;background:#3978ed;border-radius:10px}
+.vote-message{font-size:13px;color:#aaa;margin-top:12px;line-height:1.5}
+.vote-selected{color:#8eb6ff;font-size:13px;margin-top:10px}
+@media(max-width:550px){
+.song{flex-direction:column}
+.actions{width:100%}
+}
 </style>
 </head>
+
 <body>
 <div class="container">
+
 <h1>🎵 Andrzejki szkolne</h1>
 <div class="subtitle">Zaproponuj utwór i poczekaj na weryfikację</div>
 
 <div class="card">
 <h2>Dodaj piosenkę</h2>
+
+<div class="deadline-info" id="submissionDeadlineInfo"></div>
+
 <form id="songForm">
 <input id="title" placeholder="Tytuł piosenki" required maxlength="150">
 <input id="artist" placeholder="Wykonawca (opcjonalnie)" maxlength="150">
 <button class="primary" id="submitButton" type="submit">Wyślij propozycję</button>
 </form>
+
 <div id="formMessage" class="message"></div>
 </div>
 
@@ -50,13 +97,41 @@ button{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:b
 <div id="songList"></div>
 </div>
 
+<div class="card" id="votingCard">
+<h2>🗳️ Głosowanie na piosenki</h2>
+
+<div class="deadline-info" id="votingInfo"></div>
+
+<div id="votingContent">
+<div class="empty">Ładowanie piosenek...</div>
+</div>
+
+<div class="vote-selected" id="voteSelected"></div>
+
+<button class="primary" id="voteButton" type="button" disabled>
+Oddaj głos
+</button>
+
+<div id="voteMessage" class="vote-message"></div>
+</div>
+
+<div class="card" id="resultsCard">
+<h2>🏆 Wyniki głosowania</h2>
+<div id="resultsInfo" class="message"></div>
+<div id="resultsList">
+<div class="empty">Ładowanie wyników...</div>
+</div>
+</div>
+
 <div class="card" id="loginCard">
 <h2>Panel moderacji</h2>
+
 <form id="loginForm">
 <input id="email" type="email" placeholder="Adres e-mail" required>
 <input id="password" type="password" placeholder="Hasło" required>
 <button class="primary" id="loginButton" type="submit">Zaloguj się</button>
 </form>
+
 <div id="loginMessage" class="message"></div>
 </div>
 
@@ -75,6 +150,7 @@ button{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:b
 <div id="ownerList"></div>
 <button id="ownerLogout" class="delete">Wyloguj się</button>
 </div>
+
 </div>
 
 <div id="reasonModal" class="modal hidden">
@@ -89,11 +165,27 @@ button{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:b
 </div>
 
 <script>
+/* KONFIGURACJA */
+
 const SUPABASE_URL="https://oxyqhdvotdcviorvhmxi.supabase.co";
 const SUPABASE_KEY="sb_publishable_xrpYjsZi08JZ-EivDnvspg_xGRf0XXt";
+
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let currentRole="visitor",currentUser=null,loadVersion=0,selectedSongId=null,actionInProgress=false;
+const VOTE_FUNCTION_URL=SUPABASE_URL+"/functions/v1/submit-votes";
+
+const SUBMISSION_DEADLINE=new Date("2026-11-26T19:00:00+01:00");
+const VOTING_START=new Date("2026-11-27T00:00:00+01:00");
+const VOTING_END=new Date("2026-11-30T00:00:00+01:00");
+
+let currentRole="visitor";
+let currentUser=null;
+let loadVersion=0;
+let selectedSongId=null;
+let actionInProgress=false;
+let approvedSongs=[];
+let selectedVoteIds=new Set();
+let votingInProgress=false;
 
 const songList=document.getElementById("songList");
 const songCount=document.getElementById("songCount");
@@ -111,6 +203,57 @@ const reasonNames={
 few_bad_words:"Mało brzydkich słów",
 many_bad_words:"Dużo brzydkich słów"
 };
+
+/* CZAS I TERMINY */
+
+function getCurrentTime(){
+return new Date();
+}
+
+function isSubmissionOpen(){
+return getCurrentTime()<SUBMISSION_DEADLINE;
+}
+
+function isVotingOpen(){
+const now=getCurrentTime();
+return now>=VOTING_START&&now<VOTING_END;
+}
+
+function formatDate(date){
+return date.toLocaleString("pl-PL",{
+day:"2-digit",
+month:"2-digit",
+year:"numeric",
+hour:"2-digit",
+minute:"2-digit"
+});
+}
+
+function updateDeadlineInformation(){
+const submissionInfo=document.getElementById("submissionDeadlineInfo");
+const votingInfo=document.getElementById("votingInfo");
+const submitButton=document.getElementById("submitButton");
+
+if(isSubmissionOpen()){
+submissionInfo.innerHTML="<strong>Przyjmowanie zgłoszeń jest otwarte.</strong><br>Możesz dodawać piosenki do 26 listopada 2026 r. do godz. 19:00.";
+submitButton.disabled=false;
+}else{
+submissionInfo.innerHTML="<strong>Przyjmowanie zgłoszeń zostało zakończone.</strong><br>Termin minął 26 listopada 2026 r. o godz. 19:00.";
+submitButton.disabled=true;
+}
+
+const now=getCurrentTime();
+
+if(now<VOTING_START){
+votingInfo.innerHTML="<strong>Głosowanie jeszcze się nie rozpoczęło.</strong><br>Start: 27 listopada 2026 r. o godz. 00:00.<br>Koniec: 30 listopada 2026 r. o godz. 00:00.";
+}else if(isVotingOpen()){
+votingInfo.innerHTML="<strong>Głosowanie jest otwarte!</strong><br>Wybierz maksymalnie 5 piosenek. Głosowanie kończy się 30 listopada 2026 r. o godz. 00:00.";
+}else{
+votingInfo.innerHTML="<strong>Głosowanie zostało zakończone.</strong><br>Dziękujemy za udział!";
+}
+}
+
+/* POMOCNICZE */
 
 function makeButton(text,cls,callback){
 const b=document.createElement("button");
@@ -154,6 +297,8 @@ box.append(heading,reason);
 return box;
 }
 
+/* LISTA WSZYSTKICH PIOSENEK */
+
 async function loadSongs(){
 const version=++loadVersion;
 
@@ -191,6 +336,8 @@ songList.append(item);
 }
 }
 
+/* PANEL POMOCNIKA */
+
 async function loadHelperPanel(){
 helperList.replaceChildren();
 
@@ -206,7 +353,10 @@ return;
 }
 
 if(!data.length){
-helperList.innerHTML='<div class="empty">Brak nowych zgłoszeń do weryfikacji.</div>';
+const empty=document.createElement("div");
+empty.className="empty";
+empty.textContent="Brak nowych zgłoszeń do weryfikacji.";
+helperList.append(empty);
 return;
 }
 
@@ -227,6 +377,8 @@ item.append(actions);
 helperList.append(item);
 }
 }
+
+/* PANEL WŁAŚCICIELA */
 
 async function loadOwnerPanel(){
 ownerList.replaceChildren();
@@ -253,7 +405,10 @@ return;
 const reviewMap=new Map((reviews||[]).map(r=>[r.song_id,r]));
 
 if(!songs.length){
-ownerList.innerHTML='<div class="empty">Nie ma jeszcze żadnych piosenek.</div>';
+const empty=document.createElement("div");
+empty.className="empty";
+empty.textContent="Nie ma jeszcze żadnych piosenek.";
+ownerList.append(empty);
 return;
 }
 
@@ -302,11 +457,16 @@ ownerList.append(item);
 }
 }
 
+/* ODŚWIEŻANIE PANELI */
+
 async function refreshPanels(){
 await loadSongs();
+
 if(currentRole==="helper")await loadHelperPanel();
 if(currentRole==="owner")await loadOwnerPanel();
 }
+
+/* MODERACJA */
 
 async function helperReview(songId,decision,reason){
 if(actionInProgress)return;
@@ -354,6 +514,8 @@ return;
 }
 
 await refreshPanels();
+await loadVotingSongs();
+await loadVoteResults();
 }finally{
 actionInProgress=false;
 }
@@ -373,11 +535,16 @@ alert("Nie udało się usunąć: "+error.message);
 return;
 }
 
+selectedVoteIds.delete(songId);
 await refreshPanels();
+await loadVotingSongs();
+await loadVoteResults();
 }finally{
 actionInProgress=false;
 }
 }
+
+/* MODAL ODRZUCENIA */
 
 function openReasonModal(id){
 selectedSongId=id;
@@ -458,6 +625,13 @@ const message=document.getElementById("formMessage");
 
 if(button.disabled)return;
 
+if(!isSubmissionOpen()){
+message.textContent="Termin zgłaszania piosenek już minął.";
+message.style.color="#ffaaaa";
+updateDeadlineInformation();
+return;
+}
+
 const title=document.getElementById("title").value.trim();
 const artist=document.getElementById("artist").value.trim();
 
@@ -500,6 +674,7 @@ message.textContent="Nie udało się sprawdzić listy: "+error.message;
 message.style.color="#ffaaaa";
 }finally{
 button.disabled=false;
+updateDeadlineInformation();
 }
 });
 
@@ -597,13 +772,297 @@ document.getElementById("ownerInfo").textContent=
 await refreshPanels();
 }
 
-db.auth.onAuthStateChange(event=>{
+db.auth.onAuthStateChange((event)=>{
 if(event==="SIGNED_IN"||event==="SIGNED_OUT"){
 setTimeout(()=>initializeUser(),0);
 }
 });
 
-initializeUser();
+/* GŁOSOWANIE */
+
+function getDeviceId(){
+let deviceId=localStorage.getItem("andrzejki_device_id");
+
+if(!deviceId){
+deviceId=crypto.randomUUID();
+localStorage.setItem("andrzejki_device_id",deviceId);
+}
+
+return deviceId;
+}
+
+async function loadVotingSongs(){
+const container=document.getElementById("votingContent");
+
+const {data,error}=await db
+.from("songs")
+.select("id,title,artist")
+.eq("status","approved")
+.order("title",{ascending:true});
+
+if(error){
+container.textContent="Nie udało się pobrać piosenek: "+error.message;
+return;
+}
+
+approvedSongs=data||[];
+
+const approvedIds=new Set(approvedSongs.map(song=>Number(song.id)));
+
+selectedVoteIds=new Set(
+[...selectedVoteIds].filter(id=>approvedIds.has(Number(id)))
+);
+
+renderVotingSongs();
+}
+
+function renderVotingSongs(){
+const container=document.getElementById("votingContent");
+const button=document.getElementById("voteButton");
+
+container.replaceChildren();
+
+if(!approvedSongs.length){
+const empty=document.createElement("div");
+empty.className="empty";
+empty.textContent="Nie ma jeszcze zaakceptowanych piosenek.";
+container.append(empty);
+updateVoteSelection();
+return;
+}
+
+if(!isVotingOpen()){
+const empty=document.createElement("div");
+empty.className="empty";
+empty.textContent=getCurrentTime()<VOTING_START
+?"Lista piosenek do głosowania będzie dostępna po rozpoczęciu głosowania."
+:"Głosowanie zostało zakończone.";
+container.append(empty);
+updateVoteSelection();
+return;
+}
+
+for(const song of approvedSongs){
+const label=document.createElement("label");
+label.className="vote-song";
+
+const checkbox=document.createElement("input");
+checkbox.type="checkbox";
+checkbox.value=song.id;
+checkbox.checked=selectedVoteIds.has(Number(song.id));
+
+checkbox.addEventListener("change",()=>{
+const id=Number(song.id);
+
+if(checkbox.checked){
+if(selectedVoteIds.size>=5){
+checkbox.checked=false;
+document.getElementById("voteMessage").textContent="Możesz wybrać maksymalnie 5 piosenek.";
+return;
+}
+selectedVoteIds.add(id);
+}else{
+selectedVoteIds.delete(id);
+}
+
+document.getElementById("voteMessage").textContent="";
+updateVoteSelection();
+});
+
+const info=document.createElement("div");
+info.className="vote-song-info";
+
+const title=document.createElement("div");
+title.className="vote-song-title";
+title.textContent=song.title;
+
+const artist=document.createElement("div");
+artist.className="vote-song-artist";
+artist.textContent=song.artist||"Nie podano wykonawcy";
+
+info.append(title,artist);
+label.append(checkbox,info);
+container.append(label);
+}
+
+updateVoteSelection();
+}
+
+function updateVoteSelection(){
+const count=selectedVoteIds.size;
+const button=document.getElementById("voteButton");
+
+document.getElementById("voteSelected").textContent=
+"Wybrano: "+count+"/5 piosenek";
+
+button.disabled=!isVotingOpen()||count<1||votingInProgress;
+}
+
+async function submitVotes(){
+if(votingInProgress)return;
+
+const message=document.getElementById("voteMessage");
+const button=document.getElementById("voteButton");
+
+if(!isVotingOpen()){
+message.textContent="Głosowanie nie jest obecnie otwarte.";
+updateDeadlineInformation();
+renderVotingSongs();
+return;
+}
+
+if(selectedVoteIds.size<1||selectedVoteIds.size>5){
+message.textContent="Wybierz od 1 do 5 piosenek.";
+return;
+}
+
+votingInProgress=true;
+button.disabled=true;
+button.textContent="Wysyłanie głosu...";
+message.textContent="Przesyłanie głosu...";
+
+try{
+const response=await fetch(VOTE_FUNCTION_URL,{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"apikey":SUPABASE_KEY
+},
+body:JSON.stringify({
+song_ids:[...selectedVoteIds],
+device_id:getDeviceId()
+})
+});
+
+let result;
+
+try{
+result=await response.json();
+}catch{
+throw new Error("Serwer zwrócił nieprawidłową odpowiedź.");
+}
+
+if(!response.ok){
+throw new Error(result.error||result.message||"Nie udało się oddać głosu.");
+}
+
+message.textContent=result.message||"Głos został zapisany!";
+message.style.color="#76e4aa";
+
+selectedVoteIds.clear();
+
+await loadVotingSongs();
+await loadVoteResults();
+
+}catch(error){
+message.textContent=error.message;
+message.style.color="#ffaaaa";
+}finally{
+votingInProgress=false;
+button.textContent="Oddaj głos";
+updateVoteSelection();
+}
+}
+
+document.getElementById("voteButton").addEventListener("click",submitVotes);
+
+/* PUBLICZNE WYNIKI */
+
+async function loadVoteResults(){
+const container=document.getElementById("resultsList");
+const info=document.getElementById("resultsInfo");
+
+const {data,error}=await db.rpc("get_public_vote_results");
+
+if(error){
+container.textContent="Nie udało się pobrać wyników: "+error.message;
+return;
+}
+
+container.replaceChildren();
+
+const results=(data||[]).slice().sort((a,b)=>
+Number(b.vote_count||0)-Number(a.vote_count||0)
+);
+
+const totalVotes=results.reduce((sum,song)=>sum+Number(song.vote_count||0),0);
+
+info.textContent="Łączna liczba oddanych głosów: "+totalVotes;
+
+if(!results.length){
+const empty=document.createElement("div");
+empty.className="empty";
+empty.textContent="Nie ma jeszcze wyników.";
+container.append(empty);
+return;
+}
+
+const maxVotes=Math.max(...results.map(song=>Number(song.vote_count||0)),1);
+
+results.forEach((song,index)=>{
+const row=document.createElement("div");
+row.className="vote-result";
+
+const position=document.createElement("div");
+position.className="vote-position";
+position.textContent=(index+1)+".";
+
+const details=document.createElement("div");
+details.className="vote-result-info";
+
+const title=document.createElement("div");
+title.className="vote-song-title";
+title.textContent=song.title;
+
+const artist=document.createElement("div");
+artist.className="vote-song-artist";
+artist.textContent=song.artist||"Nie podano wykonawcy";
+
+const count=document.createElement("div");
+count.className="vote-count";
+const votes=Number(song.vote_count||0);
+count.textContent=votes+" "+(votes===1?"głos":votes>=2&&votes<=4?"głosy":"głosów");
+
+const bar=document.createElement("div");
+bar.className="vote-bar";
+
+const fill=document.createElement("div");
+fill.className="vote-bar-fill";
+fill.style.width=(votes/maxVotes*100)+"%";
+
+bar.append(fill);
+details.append(title,artist,count,bar);
+row.append(position,details);
+container.append(row);
+});
+}
+
+/* START */
+
+async function initializePage(){
+updateDeadlineInformation();
+
+await Promise.all([
+loadSongs(),
+loadVotingSongs(),
+loadVoteResults(),
+initializeUser()
+]);
+
+updateDeadlineInformation();
+renderVotingSongs();
+}
+
+initializePage();
+
+/* Odświeżanie informacji o terminach */
+setInterval(()=>{
+updateDeadlineInformation();
+
+if(!isVotingOpen()){
+renderVotingSongs();
+}
+},15000);
 </script>
 </body>
 </html>
