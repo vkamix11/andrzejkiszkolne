@@ -1137,12 +1137,17 @@ initializePage();
 
 /* ODŚWIEŻANIE INFORMACJI O TERMINACH */
 
-setInterval(()=>{
-updateDeadlineInformation();
+let previousVotingState = isVotingOpen();
 
-if(!isVotingOpen()){
-renderVotingSongs();
-}
+setInterval(()=>{
+    updateDeadlineInformation();
+
+    const currentVotingState = isVotingOpen();
+
+    if(currentVotingState !== previousVotingState){
+        renderVotingSongs();
+        previousVotingState = currentVotingState;
+    }
 },15000);
 // Automatyczne odświeżanie wyników co 15 sekund
 setInterval(()=>{
