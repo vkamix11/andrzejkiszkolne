@@ -9,6 +9,7 @@
 
 <style>
 *{box-sizing:border-box}
+html{scroll-behavior:smooth}
 body{margin:0;padding:25px 15px;background:#101114;color:#f5f5f5;font-family:Arial,sans-serif}
 .container{max-width:800px;margin:auto}
 h1{text-align:center;margin-bottom:8px}
@@ -64,15 +65,80 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .vote-bar-fill{height:100%;background:#3978ed;border-radius:10px}
 .vote-message{font-size:13px;color:#aaa;margin-top:12px;line-height:1.5}
 .vote-selected{color:#8eb6ff;font-size:13px;margin-top:10px}
+
+/* PRZYCISK PRZEJŚCIA DO GŁOSOWANIA */
+.vote-nav{
+    position:sticky;
+    top:0;
+    z-index:20;
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    margin:0 0 18px;
+    padding:10px 2px;
+    pointer-events:none;
+}
+.vote-nav button{
+    position:relative;
+    pointer-events:auto;
+    width:auto;
+    margin:0;
+    padding:7px 2px;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    color:#e8e8e8;
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:.2px;
+}
+.vote-nav button::after{
+    content:"";
+    position:absolute;
+    left:0;
+    bottom:2px;
+    width:100%;
+    height:1px;
+    background:#8eb6ff;
+    transform:scaleX(0);
+    transform-origin:left;
+    transition:transform .3s ease;
+}
+.vote-nav button:hover::after,
+.vote-nav button:focus-visible::after{
+    transform:scaleX(1);
+}
+.vote-nav button:hover{color:#8eb6ff}
+#votingCard{scroll-margin-top:75px}
+
 @media(max-width:550px){
-.song{flex-direction:column}
-.actions{width:100%}
+    body{padding:15px 12px}
+    .song{flex-direction:column}
+    .actions{width:100%}
+    .vote-nav{
+        top:0;
+        padding:9px 4px;
+        margin-bottom:14px;
+    }
+    .vote-nav button{
+        font-size:14px;
+        padding:9px 3px;
+    }
+    #votingCard{scroll-margin-top:65px}
+}
+@media(prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .vote-nav button::after{transition:none}
 }
 </style>
 </head>
 
 <body>
 <div class="container">
+
+<div class="vote-nav">
+    <button type="button" id="goToVoting">Głosowanie</button>
+</div>
 
 <h1>🎵 Andrzejki szkolne</h1>
 <div class="subtitle">Zaproponuj utwór i poczekaj na weryfikację</div>
@@ -99,6 +165,11 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
 <div class="card" id="votingCard">
 <h2>🗳️ Głosowanie na piosenki</h2>
+
+<div class="deadline-info">
+<strong>Ważna informacja:</strong><br>
+Na podstawie wyników głosowania zostanie wybranych 35 piosenek, które trafią na szkolną imprezę. Wybierz maksymalnie 5 swoich ulubionych utworów.
+</div>
 
 <div class="deadline-info" id="votingInfo"></div>
 
@@ -203,6 +274,15 @@ const reasonNames={
 few_bad_words:"Mało brzydkich słów",
 many_bad_words:"Dużo brzydkich słów"
 };
+
+/* PRZEJŚCIE DO GŁOSOWANIA */
+
+document.getElementById("goToVoting").addEventListener("click",()=>{
+document.getElementById("votingCard").scrollIntoView({
+behavior:"smooth",
+block:"start"
+});
+});
 
 /* CZAS I TERMINY */
 
@@ -1055,7 +1135,8 @@ renderVotingSongs();
 
 initializePage();
 
-/* Odświeżanie informacji o terminach */
+/* ODŚWIEŻANIE INFORMACJI O TERMINACH */
+
 setInterval(()=>{
 updateDeadlineInformation();
 
