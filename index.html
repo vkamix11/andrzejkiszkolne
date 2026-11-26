@@ -1062,10 +1062,10 @@ return;
 container.replaceChildren();
 
 const results=(data||[]).slice().sort((a,b)=>
-Number(b.vote_count||0)-Number(a.vote_count||0)
+Number(b.votes||0)-Number(a.votes||0)
 );
 
-const totalVotes=results.reduce((sum,song)=>sum+Number(song.vote_count||0),0);
+const totalVotes=results.reduce((sum,song)=>sum+Number(song.votes||0),0);
 
 info.textContent="Łączna liczba oddanych głosów: "+totalVotes;
 
@@ -1077,7 +1077,7 @@ container.append(empty);
 return;
 }
 
-const maxVotes=Math.max(...results.map(song=>Number(song.vote_count||0)),1);
+const maxVotes=Math.max(...results.map(song=>Number(song.votes||0)),1);
 
 results.forEach((song,index)=>{
 const row=document.createElement("div");
@@ -1100,7 +1100,7 @@ artist.textContent=song.artist||"Nie podano wykonawcy";
 
 const count=document.createElement("div");
 count.className="vote-count";
-const votes=Number(song.vote_count||0);
+const votes=Number(song.votes||0);
 count.textContent=votes+" "+(votes===1?"głos":votes>=2&&votes<=4?"głosy":"głosów");
 
 const bar=document.createElement("div");
@@ -1143,6 +1143,10 @@ updateDeadlineInformation();
 if(!isVotingOpen()){
 renderVotingSongs();
 }
+},15000);
+// Automatyczne odświeżanie wyników co 15 sekund
+setInterval(()=>{
+    loadVoteResults();
 },15000);
 </script>
 </body>
