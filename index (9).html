@@ -1,0 +1,1202 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Andrzejki szkolne</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;padding:25px 15px;background:#101114;color:#f5f5f5;font-family:Arial,sans-serif}
+.container{max-width:800px;margin:auto}
+h1{text-align:center;margin-bottom:8px}
+.subtitle{text-align:center;color:#999;margin-bottom:30px}
+.card{background:#191b20;border:1px solid #292c33;border-radius:13px;padding:20px;margin-bottom:20px}
+h2{font-size:19px;margin-top:0}
+input{width:100%;padding:13px;margin:7px 0;background:#101114;border:1px solid #343741;border-radius:8px;color:white;font-size:15px}
+button{border:0;border-radius:8px;padding:11px 16px;cursor:pointer;font-weight:bold;font-size:14px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.primary{background:#3978ed;color:white;width:100%;margin-top:8px}
+.approve{background:#176b43;color:white}
+.reject{background:#873333;color:white}
+.delete,.cancel{background:#343741;color:white}
+.song{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:15px 0;border-bottom:1px solid #30323a}
+.song:last-child{border-bottom:0}
+.song-info{flex:1;min-width:0}
+.song-title{font-weight:bold;overflow-wrap:anywhere}
+.artist{color:#999;font-size:13px;margin-top:5px}
+.status{display:inline-block;font-size:11px;padding:5px 8px;border-radius:20px;margin-top:7px}
+.approved{background:#174b35;color:#76e4aa}
+.pending{background:#59451a;color:#ffd77a}
+.awaiting_owner{background:#243d61;color:#a9ceff}
+.rejected{background:#542727;color:#ffaaaa}
+.actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.actions button{padding:8px 10px}
+.message{color:#aaa;font-size:13px;margin-top:10px;line-height:1.5}
+.hidden{display:none!important}
+.top-info{color:#999;font-size:13px;text-align:center;margin-bottom:20px}
+.role-label{color:#8eb6ff;font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px}
+.private-reason{margin-top:9px;padding:10px;background:#29232a;border:1px solid #49364b;border-radius:8px;font-size:13px}
+.private-reason strong{color:#e5b5ff}
+.modal{position:fixed;inset:0;z-index:10;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:15px}
+.modal-content{width:100%;max-width:400px;background:#191b20;border:1px solid #343741;border-radius:13px;padding:22px}
+.modal-content button{width:100%;margin-top:9px}
+.empty{text-align:center;color:#999;padding:20px 5px}
+.duplicate-highlight{display:inline-block;color:#fff;background:rgba(57,120,237,.35);outline:2px solid #5790ff;border-radius:7px;padding:4px 7px;margin:-4px -7px;animation:duplicatePulse 1s ease-in-out 3;scroll-margin-top:100px}
+@keyframes duplicatePulse{0%,100%{background:rgba(57,120,237,.18);box-shadow:0 0 0 0 rgba(87,144,255,0)}50%{background:rgba(57,120,237,.5);box-shadow:0 0 0 7px rgba(87,144,255,.15)}}
+
+.deadline-info{padding:12px;background:#22252c;border:1px solid #343741;border-radius:9px;font-size:13px;color:#bbb;line-height:1.6;margin-bottom:15px}
+.deadline-info strong{color:#fff}
+.vote-song{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid #30323a;cursor:pointer}
+.vote-song:last-child{border-bottom:0}
+.vote-song input{width:19px;height:19px;min-width:19px;margin:2px 0;accent-color:#3978ed;cursor:pointer}
+.vote-song-info{flex:1;min-width:0}
+.vote-song-title{font-weight:bold;overflow-wrap:anywhere}
+.vote-song-artist{font-size:13px;color:#999;margin-top:5px}
+.vote-count{color:#8eb6ff;font-size:13px;font-weight:bold}
+.vote-result{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #30323a}
+.vote-result:last-child{border-bottom:0}
+.vote-position{font-size:18px;font-weight:bold;color:#8eb6ff;min-width:28px}
+.vote-result-info{flex:1;min-width:0}
+.vote-bar{height:6px;background:#30343e;border-radius:10px;overflow:hidden;margin-top:8px}
+.vote-bar-fill{height:100%;background:#3978ed;border-radius:10px}
+.vote-message{font-size:13px;color:#aaa;margin-top:12px;line-height:1.5}
+.vote-row{-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #30323a}
+.vote-row:last-child{border-bottom:0}
+.vote-row.votable{cursor:pointer}
+.cb{position:relative;width:26px;height:26px;min-width:26px;flex-shrink:0;transition:opacity .3s ease,transform .35s cubic-bezier(.34,1.56,.64,1)}
+.cb input{-webkit-tap-highlight-color:transparent;position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;opacity:0;cursor:pointer;z-index:1}
+.cb-box{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border:2px solid #4a4f5c;border-radius:8px;background:#101114;transition:background .25s ease,border-color .25s ease,box-shadow .25s ease}
+.cb-box svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.cb-box path{stroke-dasharray:22;stroke-dashoffset:22;transition:stroke-dashoffset .3s ease}
+.cb:hover .cb-box{border-color:#7fa8f5}
+.cb input:checked~.cb-box{background:linear-gradient(135deg,#4a8bff,#3978ed);border-color:#4a8bff;box-shadow:0 0 0 4px rgba(87,144,255,.18)}
+.cb input:checked~.cb-box path{stroke-dashoffset:0;transition-delay:.08s}
+.cb input:focus-visible~.cb-box{outline:2px solid #8eb6ff;outline-offset:2px}
+.cb.pop .cb-box{animation:cbPop .38s cubic-bezier(.34,1.56,.64,1)}
+@keyframes cbPop{0%{transform:scale(.8)}55%{transform:scale(1.18)}100%{transform:scale(1)}}
+.vote-row.cb-hidden .cb{opacity:0;transform:scale(.3) rotate(-20deg);pointer-events:none}
+.vote-row.cb-hidden{cursor:default}
+@media(prefers-reduced-motion:reduce){.cb,.cb-box,.cb-box path{transition:none}.cb.pop .cb-box{animation:none}}
+.vote-sticky{position:sticky;bottom:0;z-index:20;margin:12px -20px -20px;padding:10px 20px calc(12px + env(safe-area-inset-bottom,0px));background:rgba(25,27,32,.94);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid #292c33;border-radius:0 0 13px 13px}
+.vote-sticky .vote-selected{margin-top:0;margin-bottom:8px}
+.vote-sticky .vote-message:empty{display:none}
+.vote-selected{color:#8eb6ff;font-size:13px;margin-top:10px}
+
+/* PRZYCISK PRZEJŚCIA DO GŁOSOWANIA */
+.vote-nav{
+    position:sticky;
+    top:0;
+    z-index:20;
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    margin:0 0 18px;
+    padding:10px 2px;
+    pointer-events:none;
+}
+.vote-nav button{
+    position:relative;
+    pointer-events:auto;
+    width:auto;
+    margin:0;
+    padding:7px 2px;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    color:#e8e8e8;
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:.2px;
+}
+.vote-nav button::after{
+    content:"";
+    position:absolute;
+    left:0;
+    bottom:2px;
+    width:100%;
+    height:1px;
+    background:#8eb6ff;
+    transform:scaleX(0);
+    transform-origin:left;
+    transition:transform .3s ease;
+}
+.vote-nav button:hover::after,
+.vote-nav button:focus-visible::after{
+    transform:scaleX(1);
+}
+.vote-nav button:hover{color:#8eb6ff}
+#votingCard{scroll-margin-top:75px}
+
+@media(max-width:550px){
+    body{padding:15px 12px}
+    .song{flex-direction:column}
+    .actions{width:100%}
+    .vote-nav{
+        top:0;
+        padding:9px 4px;
+        margin-bottom:14px;
+    }
+    .vote-nav button{
+        font-size:14px;
+        padding:9px 3px;
+    }
+    #votingCard{scroll-margin-top:65px}
+}
+@media(prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .vote-nav button::after{transition:none}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<div class="vote-nav">
+    <button type="button" id="goToVoting">Głosowanie</button>
+</div>
+
+<h1>🎵 Andrzejki szkolne</h1>
+<div class="subtitle">Zaproponuj utwór i poczekaj na weryfikację</div>
+
+<div class="card">
+<h2>Dodaj piosenkę</h2>
+
+<div class="deadline-info" id="submissionDeadlineInfo"></div>
+
+<form id="songForm">
+<input id="title" placeholder="Tytuł piosenki" required maxlength="150">
+<input id="artist" placeholder="Wykonawca (opcjonalnie)" maxlength="150">
+<button class="primary" id="submitButton" type="submit">Wyślij propozycję</button>
+</form>
+
+<div id="formMessage" class="message"></div>
+</div>
+
+<div class="card" id="songsCard">
+<h2>Lista utworów</h2>
+<div class="top-info" id="songCount">Ładowanie...</div>
+<div id="songList"></div>
+</div>
+
+<div class="card" id="votingCard">
+<h2>🏆 TOP – głosowanie na piosenki</h2>
+
+<div class="deadline-info">
+<strong>Ważna informacja:</strong><br>
+Na podstawie wyników głosowania zostanie wybranych 35 piosenek, które trafią na szkolną imprezę. Zaznacz maksymalnie 5 swoich ulubionych utworów bezpośrednio na liście TOP poniżej.
+</div>
+
+<div class="deadline-info" id="votingInfo"></div>
+
+<div id="resultsInfo" class="top-info"></div>
+
+<div id="votingContent">
+<div class="empty">Ładowanie piosenek...</div>
+</div>
+
+<div class="vote-sticky">
+<div class="vote-selected" id="voteSelected"></div>
+
+<button class="primary" id="voteButton" type="button" disabled>
+Oddaj głos
+</button>
+
+<div id="voteMessage" class="vote-message"></div>
+</div>
+</div>
+
+<div class="card" id="loginCard">
+<h2>Panel moderacji</h2>
+
+<form id="loginForm">
+<input id="email" type="email" placeholder="Adres e-mail" required>
+<input id="password" type="password" placeholder="Hasło" required>
+<button class="primary" id="loginButton" type="submit">Zaloguj się</button>
+</form>
+
+<div id="loginMessage" class="message"></div>
+</div>
+
+<div class="card hidden" id="helperCard">
+<div class="role-label">Panel pomocnika</div>
+<h2>Weryfikacja pierwszego etapu</h2>
+<p class="message">Możesz wstępnie zaakceptować lub odrzucić zgłoszenia. Ostateczną decyzję podejmuje właściciel.</p>
+<div id="helperList"></div>
+<button id="helperLogout" class="delete">Wyloguj się</button>
+</div>
+
+<div class="card hidden" id="ownerCard">
+<div class="role-label">Panel właściciela</div>
+<h2>Ostateczna weryfikacja</h2>
+<p id="ownerInfo" class="message"></p>
+<div id="ownerList"></div>
+<button id="ownerLogout" class="delete">Wyloguj się</button>
+</div>
+
+</div>
+
+<div id="reasonModal" class="modal hidden">
+<div class="modal-content">
+<h2>Powód odrzucenia</h2>
+<p class="message">Wybierz powód wstępnego odrzucenia piosenki. Informacja będzie widoczna wyłącznie dla właściciela.</p>
+<button class="reject" id="fewWords">Mało brzydkich słów</button>
+<button class="reject" id="manyWords">Dużo brzydkich słów</button>
+<button class="cancel" id="cancelReason">Anuluj</button>
+<div id="reasonMessage" class="message"></div>
+</div>
+</div>
+
+<script>
+/* KONFIGURACJA */
+
+const SUPABASE_URL="https://oxyqhdvotdcviorvhmxi.supabase.co";
+const SUPABASE_KEY="sb_publishable_xrpYjsZi08JZ-EivDnvspg_xGRf0XXt";
+
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+const VOTE_FUNCTION_URL=SUPABASE_URL+"/functions/v1/submit-votes";
+
+const SUBMISSION_DEADLINE=new Date("2026-11-26T19:00:00+01:00");
+const VOTING_START=new Date("2026-11-27T00:00:00+01:00");
+const VOTING_END=new Date("2026-11-30T00:00:00+01:00");
+
+let currentRole="visitor";
+let currentUser=null;
+let loadVersion=0;
+let selectedSongId=null;
+let actionInProgress=false;
+let approvedSongs=[];
+let selectedVoteIds=new Set();
+let votingInProgress=false;
+let resultsData=[];
+let frozenOrder=null;
+
+const songList=document.getElementById("songList");
+const songCount=document.getElementById("songCount");
+const helperList=document.getElementById("helperList");
+const ownerList=document.getElementById("ownerList");
+
+const statusNames={
+pending:"Czeka na weryfikację",
+awaiting_owner:"Czeka na decyzję właściciela",
+approved:"Zaakceptowano",
+rejected:"Odrzucono"
+};
+
+const reasonNames={
+few_bad_words:"Mało brzydkich słów",
+many_bad_words:"Dużo brzydkich słów"
+};
+
+/* PRZEJŚCIE DO GŁOSOWANIA */
+
+document.getElementById("goToVoting").addEventListener("click",()=>{
+document.getElementById("votingCard").scrollIntoView({
+behavior:"smooth",
+block:"start"
+});
+});
+
+/* CZAS I TERMINY */
+
+function getCurrentTime(){
+return new Date();
+}
+
+function isSubmissionOpen(){
+return getCurrentTime()<SUBMISSION_DEADLINE;
+}
+
+function isVotingOpen(){
+const now=getCurrentTime();
+return now>=VOTING_START&&now<VOTING_END;
+}
+
+function formatDate(date){
+return date.toLocaleString("pl-PL",{
+day:"2-digit",
+month:"2-digit",
+year:"numeric",
+hour:"2-digit",
+minute:"2-digit"
+});
+}
+
+function updateDeadlineInformation(){
+document.getElementById("songsCard").classList.toggle("hidden",getCurrentTime()>=VOTING_START);
+const submissionInfo=document.getElementById("submissionDeadlineInfo");
+const votingInfo=document.getElementById("votingInfo");
+const submitButton=document.getElementById("submitButton");
+
+if(isSubmissionOpen()){
+submissionInfo.innerHTML="<strong>Przyjmowanie zgłoszeń jest otwarte.</strong><br>Możesz dodawać piosenki do 26 listopada 2026 r. do godz. 19:00.";
+submitButton.disabled=false;
+}else{
+submissionInfo.innerHTML="<strong>Przyjmowanie zgłoszeń zostało zakończone.</strong><br>Termin minął 26 listopada 2026 r. o godz. 19:00.";
+submitButton.disabled=true;
+}
+
+const now=getCurrentTime();
+
+if(now<VOTING_START){
+votingInfo.innerHTML="<strong>Głosowanie jeszcze się nie rozpoczęło.</strong><br>Start: 27 listopada 2026 r. o godz. 00:00.<br>Koniec: 30 listopada 2026 r. o godz. 00:00.";
+}else if(isVotingOpen()){
+votingInfo.innerHTML="<strong>Głosowanie jest otwarte!</strong><br>Wybierz maksymalnie 5 piosenek. Głosowanie kończy się 30 listopada 2026 r. o godz. 00:00.";
+}else{
+votingInfo.innerHTML="<strong>Głosowanie zostało zakończone.</strong><br>Dziękujemy za udział!";
+}
+}
+
+/* POMOCNICZE */
+
+function makeButton(text,cls,callback){
+const b=document.createElement("button");
+b.textContent=text;
+b.className=cls;
+b.addEventListener("click",callback);
+return b;
+}
+
+function makeSongInfo(song){
+const info=document.createElement("div");
+info.className="song-info";
+
+const title=document.createElement("div");
+title.className="song-title";
+title.textContent=song.title;
+
+const artist=document.createElement("div");
+artist.className="artist";
+artist.textContent=song.artist||"Nie podano wykonawcy";
+
+const status=document.createElement("span");
+status.className="status "+song.status;
+status.textContent=statusNames[song.status]||song.status;
+
+info.append(title,artist,status);
+return info;
+}
+
+function makePrivateReason(review){
+const box=document.createElement("div");
+box.className="private-reason";
+
+const heading=document.createElement("strong");
+heading.textContent="Powód wstępnego odrzucenia:";
+
+const reason=document.createElement("div");
+reason.textContent=reasonNames[review.reason]||"Nie podano";
+
+box.append(heading,reason);
+return box;
+}
+
+/* LISTA WSZYSTKICH PIOSENEK */
+
+async function loadSongs(){
+if(getCurrentTime()>=VOTING_START)return;
+const version=++loadVersion;
+
+const {data,error}=await db
+.from("songs")
+.select("*")
+.order("created_at",{ascending:true});
+
+if(version!==loadVersion)return;
+
+if(error){
+songList.replaceChildren();
+songList.textContent="Błąd pobierania: "+error.message;
+return;
+}
+
+songList.replaceChildren();
+songCount.textContent="Liczba utworów: "+data.length;
+
+if(!data.length){
+songList.textContent="Nie ma jeszcze żadnych piosenek.";
+return;
+}
+
+for(const song of data){
+const item=document.createElement("div");
+item.className="song";
+item.id="song-item-"+song.id;
+
+const info=makeSongInfo(song);
+info.querySelector(".song-title").id="song-title-"+song.id;
+
+item.append(info);
+songList.append(item);
+}
+}
+
+/* PANEL POMOCNIKA */
+
+async function loadHelperPanel(){
+helperList.replaceChildren();
+
+const {data,error}=await db
+.from("songs")
+.select("*")
+.eq("status","pending")
+.order("created_at",{ascending:true});
+
+if(error){
+helperList.textContent=error.message;
+return;
+}
+
+if(!data.length){
+const empty=document.createElement("div");
+empty.className="empty";
+empty.textContent="Brak nowych zgłoszeń do weryfikacji.";
+helperList.append(empty);
+return;
+}
+
+for(const song of data){
+const item=document.createElement("div");
+item.className="song";
+item.append(makeSongInfo(song));
+
+const actions=document.createElement("div");
+actions.className="actions";
+
+actions.append(
+makeButton("Wstępnie zaakceptuj","approve",()=>helperReview(song.id,"approved",null)),
+makeButton("Odrzuć","reject",()=>openReasonModal(song.id))
+);
+
+item.append(actions);
+helperList.append(item);
+}
+}
+
+/* PANEL WŁAŚCICIELA */
+
+async function loadOwnerPanel(){
+ownerList.replaceChildren();
+
+const {data:songs,error}=await db
+.from("songs")
+.select("*")
+.order("created_at",{ascending:true});
+
+if(error){
+ownerList.textContent=error.message;
+return;
+}
+
+const {data:reviews,error:reviewError}=await db
+.from("song_reviews")
+.select("song_id,decision,reason,helper_id,created_at");
+
+if(reviewError){
+ownerList.textContent="Nie udało się pobrać prywatnych ocen: "+reviewError.message;
+return;
+}
+
+const reviewMap=new Map((reviews||[]).map(r=>[r.song_id,r]));
+
+if(!songs.length){
+const empty=document.createElement("div");
+empty.className="empty";
+empty.textContent="Nie ma jeszcze żadnych piosenek.";
+ownerList.append(empty);
+return;
+}
+
+for(const song of songs){
+const item=document.createElement("div");
+item.className="song";
+item.append(makeSongInfo(song));
+
+const review=reviewMap.get(song.id);
+
+if(song.status==="pending"){
+const note=document.createElement("div");
+note.className="message";
+note.textContent="To zgłoszenie nie zostało jeszcze ocenione przez pomocnika. Możesz rozpatrzyć je samodzielnie.";
+item.append(note);
+}else if(song.status==="awaiting_owner"){
+if(review&&review.decision==="rejected"){
+item.append(makePrivateReason(review));
+}else if(review){
+const note=document.createElement("div");
+note.className="private-reason";
+note.textContent="Pomocnik wstępnie zaakceptował tę piosenkę.";
+item.append(note);
+}
+}else if(song.status==="approved"||song.status==="rejected"){
+const finalNote=document.createElement("div");
+finalNote.className="message";
+finalNote.textContent="Decyzja końcowa została już podjęta. Nie można jej zmienić.";
+item.append(finalNote);
+}
+
+const actions=document.createElement("div");
+actions.className="actions";
+
+if(song.status==="pending"||song.status==="awaiting_owner"){
+actions.append(
+makeButton("Ostatecznie zaakceptuj","approve",()=>ownerDecision(song.id,"approved")),
+makeButton("Ostatecznie odrzuć","reject",()=>ownerDecision(song.id,"rejected"))
+);
+}
+
+actions.append(makeButton("Usuń","delete",()=>deleteSong(song.id)));
+
+item.append(actions);
+ownerList.append(item);
+}
+}
+
+/* ODŚWIEŻANIE PANELI */
+
+async function refreshPanels(){
+await loadSongs();
+
+if(currentRole==="helper")await loadHelperPanel();
+if(currentRole==="owner")await loadOwnerPanel();
+}
+
+/* MODERACJA */
+
+async function helperReview(songId,decision,reason){
+if(actionInProgress)return;
+actionInProgress=true;
+
+try{
+const {error}=await db.rpc("helper_review_song",{
+p_song_id:songId,
+p_decision:decision,
+p_reason:reason
+});
+
+if(error){
+alert("Nie udało się zapisać decyzji: "+error.message);
+return;
+}
+
+closeReasonModal();
+await refreshPanels();
+}finally{
+actionInProgress=false;
+}
+}
+
+async function ownerDecision(songId,decision){
+if(actionInProgress)return;
+
+const text=decision==="approved"
+?"Czy na pewno ostatecznie zaakceptować tę piosenkę?"
+:"Czy na pewno ostatecznie odrzucić tę piosenkę?";
+
+if(!confirm(text))return;
+
+actionInProgress=true;
+
+try{
+const {error}=await db.rpc("owner_finalize_song",{
+p_song_id:songId,
+p_decision:decision
+});
+
+if(error){
+alert("Nie udało się zapisać decyzji: "+error.message);
+return;
+}
+
+await refreshPanels();
+await loadVotingSongs();
+await loadVoteResults();
+}finally{
+actionInProgress=false;
+}
+}
+
+async function deleteSong(songId){
+if(currentRole!=="owner"||actionInProgress)return;
+if(!confirm("Czy na pewno usunąć tę piosenkę na stałe?"))return;
+
+actionInProgress=true;
+
+try{
+const {error}=await db.from("songs").delete().eq("id",songId);
+
+if(error){
+alert("Nie udało się usunąć: "+error.message);
+return;
+}
+
+selectedVoteIds.delete(songId);
+await refreshPanels();
+await loadVotingSongs();
+await loadVoteResults();
+}finally{
+actionInProgress=false;
+}
+}
+
+/* MODAL ODRZUCENIA */
+
+function openReasonModal(id){
+selectedSongId=id;
+document.getElementById("reasonMessage").textContent="";
+document.getElementById("reasonModal").classList.remove("hidden");
+}
+
+function closeReasonModal(){
+selectedSongId=null;
+document.getElementById("reasonModal").classList.add("hidden");
+}
+
+document.getElementById("fewWords").addEventListener("click",async()=>{
+if(selectedSongId!==null)await helperReview(selectedSongId,"rejected","few_bad_words");
+});
+
+document.getElementById("manyWords").addEventListener("click",async()=>{
+if(selectedSongId!==null)await helperReview(selectedSongId,"rejected","many_bad_words");
+});
+
+document.getElementById("cancelReason").addEventListener("click",closeReasonModal);
+
+/* WYKRYWANIE DUPLIKATÓW */
+
+function normalizeSongTitle(title){
+return (title||"")
+.normalize("NFKC")
+.trim()
+.replace(/\s+/g," ")
+.toLocaleLowerCase("pl")
+.replace(/[\u2018\u2019]/g,"'")
+.replace(/[\u201C\u201D]/g,'"');
+}
+
+async function findDuplicateSong(title){
+const {data,error}=await db
+.from("songs")
+.select("id,title");
+
+if(error)throw error;
+
+const normalized=normalizeSongTitle(title);
+
+return (data||[]).find(song=>
+normalizeSongTitle(song.title)===normalized
+)||null;
+}
+
+async function showDuplicateSong(song){
+const message=document.getElementById("formMessage");
+
+message.textContent="Ta piosenka jest już na liście! Zobacz sam!";
+message.style.color="#8eb6ff";
+
+await loadSongs();
+
+const titleElement=document.getElementById("song-title-"+song.id);
+
+if(titleElement){
+titleElement.classList.remove("duplicate-highlight");
+void titleElement.offsetWidth;
+titleElement.classList.add("duplicate-highlight");
+
+titleElement.scrollIntoView({
+behavior:"smooth",
+block:"center"
+});
+}
+}
+
+/* DODAWANIE PIOSENEK */
+
+document.getElementById("songForm").addEventListener("submit",async e=>{
+e.preventDefault();
+
+const button=document.getElementById("submitButton");
+const message=document.getElementById("formMessage");
+
+if(button.disabled)return;
+
+if(!isSubmissionOpen()){
+message.textContent="Termin zgłaszania piosenek już minął.";
+message.style.color="#ffaaaa";
+updateDeadlineInformation();
+return;
+}
+
+const title=document.getElementById("title").value.trim();
+const artist=document.getElementById("artist").value.trim();
+
+if(!title)return;
+
+button.disabled=true;
+message.textContent="Sprawdzam, czy ta piosenka jest już na liście...";
+message.style.color="#aaa";
+
+try{
+const duplicate=await findDuplicateSong(title);
+
+if(duplicate){
+await showDuplicateSong(duplicate);
+return;
+}
+
+message.textContent="Wysyłanie...";
+
+const {error}=await db.from("songs").insert({
+title,
+artist,
+status:"pending"
+});
+
+if(error){
+message.textContent="Nie udało się wysłać: "+error.message;
+message.style.color="#ffaaaa";
+return;
+}
+
+message.textContent="Piosenka została wysłana do weryfikacji!";
+message.style.color="#76e4aa";
+
+e.target.reset();
+await refreshPanels();
+
+}catch(error){
+message.textContent="Nie udało się sprawdzić listy: "+error.message;
+message.style.color="#ffaaaa";
+}finally{
+button.disabled=false;
+updateDeadlineInformation();
+}
+});
+
+/* LOGOWANIE */
+
+document.getElementById("loginForm").addEventListener("submit",async e=>{
+e.preventDefault();
+
+const button=document.getElementById("loginButton");
+const message=document.getElementById("loginMessage");
+
+if(button.disabled)return;
+
+button.disabled=true;
+message.textContent="Logowanie...";
+
+try{
+const email=document.getElementById("email").value.trim();
+const password=document.getElementById("password").value;
+
+const {error}=await db.auth.signInWithPassword({email,password});
+
+if(error){
+message.textContent="Błąd logowania: "+error.message;
+return;
+}
+
+await initializeUser();
+
+message.textContent=currentRole==="visitor"
+?"To konto nie ma uprawnień do panelu moderacji."
+:"Zalogowano.";
+
+}finally{
+button.disabled=false;
+}
+});
+
+async function logout(){
+await db.auth.signOut();
+currentRole="visitor";
+currentUser=null;
+updatePanelsVisibility();
+await loadSongs();
+}
+
+document.getElementById("helperLogout").addEventListener("click",logout);
+document.getElementById("ownerLogout").addEventListener("click",logout);
+
+function updatePanelsVisibility(){
+document.getElementById("loginCard").classList.toggle("hidden",currentRole!=="visitor");
+document.getElementById("helperCard").classList.toggle("hidden",currentRole!=="helper");
+document.getElementById("ownerCard").classList.toggle("hidden",currentRole!=="owner");
+}
+
+async function initializeUser(){
+const {data,error}=await db.auth.getUser();
+
+if(error||!data.user){
+currentUser=null;
+currentRole="visitor";
+updatePanelsVisibility();
+await loadSongs();
+return;
+}
+
+currentUser=data.user;
+currentRole="visitor";
+
+const {data:owner,error:ownerError}=await db
+.from("admins")
+.select("user_id")
+.eq("user_id",currentUser.id)
+.maybeSingle();
+
+if(!ownerError&&owner){
+currentRole="owner";
+}else{
+const {data:helper,error:helperError}=await db
+.from("helpers")
+.select("user_id")
+.eq("user_id",currentUser.id)
+.maybeSingle();
+
+if(!helperError&&helper)currentRole="helper";
+}
+
+updatePanelsVisibility();
+
+if(currentRole==="owner"){
+document.getElementById("ownerInfo").textContent=
+"Zalogowano jako właściciel: "+currentUser.email;
+}
+
+await refreshPanels();
+}
+
+db.auth.onAuthStateChange((event)=>{
+if(event==="SIGNED_IN"||event==="SIGNED_OUT"){
+setTimeout(()=>initializeUser(),0);
+}
+});
+
+/* GŁOSOWANIE */
+
+function getDeviceId(){
+let deviceId=localStorage.getItem("andrzejki_device_id");
+
+if(!deviceId){
+deviceId=crypto.randomUUID();
+localStorage.setItem("andrzejki_device_id",deviceId);
+}
+
+return deviceId;
+}
+
+async function loadVotingSongs(){
+const container=document.getElementById("votingContent");
+
+const {data,error}=await db
+.from("songs")
+.select("id,title,artist")
+.eq("status","approved")
+.order("title",{ascending:true});
+
+if(error){
+container.textContent="Nie udało się pobrać piosenek: "+error.message;
+return;
+}
+
+approvedSongs=data||[];
+
+const approvedIds=new Set(approvedSongs.map(song=>Number(song.id)));
+
+selectedVoteIds=new Set(
+[...selectedVoteIds].filter(id=>approvedIds.has(Number(id)))
+);
+
+renderVotingSongs();
+}
+
+function songKey(song){
+return normalizeSongTitle(song.title)+"|"+normalizeSongTitle(song.artist);
+}
+
+function getVotesFor(song){
+const byId=resultsData.find(r=>r.id!==undefined&&r.id!==null&&Number(r.id)===Number(song.id));
+if(byId)return Number(byId.votes||0);
+const key=songKey(song);
+const byKey=resultsData.find(r=>songKey(r)===key);
+return byKey?Number(byKey.votes||0):0;
+}
+
+function votesWord(votes){
+return votes+" "+(votes===1?"głos":votes>=2&&votes<=4?"głosy":"głosów");
+}
+
+function renderVotingSongs(){
+const container=document.getElementById("votingContent");
+
+container.replaceChildren();
+
+if(getCurrentTime()<VOTING_START){
+const empty=document.createElement("div");
+empty.className="empty";
+empty.textContent="Lista TOP będzie dostępna po rozpoczęciu głosowania.";
+container.append(empty);
+updateVoteSelection();
+return;
+}
+
+if(!approvedSongs.length){
+const empty=document.createElement("div");
+empty.className="empty";
+empty.textContent="Nie ma jeszcze zaakceptowanych piosenek.";
+container.append(empty);
+updateVoteSelection();
+return;
+}
+
+const open=isVotingOpen();
+
+let ranked=approvedSongs.map(song=>({song,votes:getVotesFor(song)}));
+ranked.sort((a,b)=>b.votes-a.votes||a.song.title.localeCompare(b.song.title,"pl"));
+
+/* kolejność jest zamrożona, gdy ktoś zaznaczył piosenki, żeby wiersze nie skakały pod palcem */
+if(open&&selectedVoteIds.size>0&&frozenOrder){
+const pos=new Map(frozenOrder.map((id,i)=>[id,i]));
+ranked.sort((a,b)=>(pos.has(Number(a.song.id))?pos.get(Number(a.song.id)):9999)-(pos.has(Number(b.song.id))?pos.get(Number(b.song.id)):9999));
+}else{
+frozenOrder=ranked.map(r=>Number(r.song.id));
+}
+
+const totalVotes=ranked.reduce((sum,r)=>sum+r.votes,0);
+document.getElementById("resultsInfo").textContent="Łączna liczba oddanych głosów: "+totalVotes;
+
+const maxVotes=Math.max(...ranked.map(r=>r.votes),1);
+
+let rank=0;
+let prevVotes=null;
+
+ranked.forEach((r,index)=>{
+if(r.votes!==prevVotes){rank=index+1;prevVotes=r.votes;}
+
+const id=Number(r.song.id);
+const row=document.createElement("div");
+row.className="vote-row"+(open?" votable":"")+(selectedVoteIds.has(id)?" picked":"");
+
+const position=document.createElement("div");
+position.className="vote-position";
+position.textContent=rank+".";
+
+const details=document.createElement("div");
+details.className="vote-result-info";
+
+const title=document.createElement("div");
+title.className="vote-song-title";
+title.textContent=r.song.title;
+
+const artist=document.createElement("div");
+artist.className="vote-song-artist";
+artist.textContent=r.song.artist||"Nie podano wykonawcy";
+
+const count=document.createElement("div");
+count.className="vote-count";
+count.textContent=votesWord(r.votes);
+
+const bar=document.createElement("div");
+bar.className="vote-bar";
+const fill=document.createElement("div");
+fill.className="vote-bar-fill";
+fill.style.width=(r.votes/maxVotes*100)+"%";
+bar.append(fill);
+
+details.append(title,artist,count,bar);
+row.append(position,details);
+
+if(open){
+const cb=document.createElement("span");
+cb.className="cb";
+
+const checkbox=document.createElement("input");
+checkbox.type="checkbox";
+checkbox.value=id;
+checkbox.checked=selectedVoteIds.has(id);
+
+const box=document.createElement("span");
+box.className="cb-box";
+box.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+checkbox.addEventListener("change",()=>{
+if(checkbox.checked){
+if(selectedVoteIds.size>=5){
+checkbox.checked=false;
+document.getElementById("voteMessage").textContent="Możesz wybrać maksymalnie 5 piosenek.";
+return;
+}
+selectedVoteIds.add(id);
+cb.classList.remove("pop");
+void cb.offsetWidth;
+cb.classList.add("pop");
+}else{
+selectedVoteIds.delete(id);
+}
+row.classList.toggle("picked",checkbox.checked);
+document.getElementById("voteMessage").textContent="";
+updateVoteSelection();
+});
+
+cb.append(checkbox,box);
+
+row.addEventListener("click",e=>{
+if(e.target===checkbox||checkbox.disabled)return;
+checkbox.click();
+});
+row.append(cb);
+}
+
+container.append(row);
+});
+
+updateVoteSelection();
+}
+
+function updateVoteSelection(){
+const count=selectedVoteIds.size;
+const button=document.getElementById("voteButton");
+
+document.getElementById("voteSelected").textContent=
+"Wybrano: "+count+"/5 piosenek";
+
+button.disabled=!isVotingOpen()||count<1||votingInProgress;
+
+const full=count>=5;
+document.querySelectorAll("#votingContent .vote-row.votable").forEach(row=>{
+const input=row.querySelector("input");
+if(!input)return;
+const hide=full&&!input.checked;
+row.classList.toggle("cb-hidden",hide);
+input.disabled=hide;
+});
+}
+
+async function submitVotes(){
+if(votingInProgress)return;
+
+const message=document.getElementById("voteMessage");
+const button=document.getElementById("voteButton");
+
+if(!isVotingOpen()){
+message.textContent="Głosowanie nie jest obecnie otwarte.";
+updateDeadlineInformation();
+renderVotingSongs();
+return;
+}
+
+if(selectedVoteIds.size<1||selectedVoteIds.size>5){
+message.textContent="Wybierz od 1 do 5 piosenek.";
+return;
+}
+
+votingInProgress=true;
+button.disabled=true;
+button.textContent="Wysyłanie głosu...";
+message.textContent="Przesyłanie głosu...";
+
+try{
+const response=await fetch(VOTE_FUNCTION_URL,{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"apikey":SUPABASE_KEY
+},
+body:JSON.stringify({
+song_ids:[...selectedVoteIds],
+device_id:getDeviceId()
+})
+});
+
+let result;
+
+try{
+result=await response.json();
+}catch{
+throw new Error("Serwer zwrócił nieprawidłową odpowiedź.");
+}
+
+if(!response.ok){
+throw new Error(result.error||result.message||"Nie udało się oddać głosu.");
+}
+
+message.textContent=result.message||"Głos został zapisany!";
+message.style.color="#76e4aa";
+
+selectedVoteIds.clear();
+frozenOrder=null;
+
+await loadVotingSongs();
+await loadVoteResults();
+
+}catch(error){
+message.textContent=error.message;
+message.style.color="#ffaaaa";
+}finally{
+votingInProgress=false;
+button.textContent="Oddaj głos";
+updateVoteSelection();
+}
+}
+
+document.getElementById("voteButton").addEventListener("click",submitVotes);
+
+/* PUBLICZNE WYNIKI (wpisane w listę TOP) */
+
+async function loadVoteResults(){
+const {data,error}=await db.rpc("get_public_vote_results");
+
+if(error){
+document.getElementById("resultsInfo").textContent="Nie udało się pobrać wyników: "+error.message;
+return;
+}
+
+resultsData=data||[];
+renderVotingSongs();
+}
+
+/* START */
+
+async function initializePage(){
+updateDeadlineInformation();
+
+await Promise.all([
+loadSongs(),
+loadVotingSongs(),
+loadVoteResults(),
+initializeUser()
+]);
+
+updateDeadlineInformation();
+renderVotingSongs();
+}
+
+initializePage();
+
+/* ODŚWIEŻANIE INFORMACJI O TERMINACH */
+
+let previousVotingState = isVotingOpen();
+
+setInterval(()=>{
+    updateDeadlineInformation();
+
+    const currentVotingState = isVotingOpen();
+
+    if(currentVotingState !== previousVotingState){
+        renderVotingSongs();
+        previousVotingState = currentVotingState;
+    }
+},15000);
+// Automatyczne odświeżanie wyników co 15 sekund
+setInterval(()=>{
+    loadVoteResults();
+},15000);
+</script>
+</body>
+</html>
